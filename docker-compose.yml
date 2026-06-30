@@ -1,0 +1,59 @@
+# ─────────────────────────────────────────────
+#  docker-compose.yml — Coffee Code
+#
+#  Servicios:
+#    • postgres  → localhost:5432
+#    • fastapi   → http://localhost:8000
+# ─────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL ────────────────────────────
+  postgres:
+    image: postgres:15
+    container_name: coffee_code_postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: "123456"
+      POSTGRES_DB: DB_coffee_code
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d DB_coffee_code"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - coffee-network
+
+  # ── FastAPI ───────────────────────────────
+  fastapi:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: coffee_code_fastapi
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://admin:123456@postgres:5432/DB_coffee_code
+    volumes:
+      - ./api/app:/app/app
+      - ./api/uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - coffee-network
+
+# ── Volúmenes ─────────────────────────────────
+volumes:
+  postgres_data:
+
+# ── Red compartida ────────────────────────────
+networks:
+  coffee-network:
+    driver: bridge

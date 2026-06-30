@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+venv/
+.venv/
+*.db
+*.sqlite3
+uploads/comidas/*.png
+uploads/comidas/*.jpg
+uploads/comidas/*.jpeg
+!uploads/comidas/.gitkeep
+postgres_data/
