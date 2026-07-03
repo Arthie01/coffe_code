@@ -12,8 +12,8 @@ import {
 } from 'react-native';
 import { COLORS } from './colors';
 
-// PASO 2: datos mock (esto luego vendrá de tu tabla "usuarios" en PostgreSQL,
-// vía un endpoint GET /usuarios)
+// PASO 2: datos mock (esto luego vendra de tu tabla "usuarios" en PostgreSQL,
+// via un endpoint GET /usuarios)
 const USUARIOS_INICIALES = [
   { id: 1, nombre: 'Ledesma Ledesma E.', correo: 'ledesma@cafeteria.mx', rol: 'Cocina', activo: true, iniciales: 'LL' },
   { id: 2, nombre: 'Martínez Silvestre C.', correo: 'coral@cafeteria.mx', rol: 'Mesero', activo: true, iniciales: 'MS' },
@@ -46,14 +46,14 @@ function TarjetaKPI({ titulo, valor, color }) {
   );
 }
 
-// PASO 4: dropdown simple (mismo patrón que en Estadísticas, para consistencia)
+// PASO 4: dropdown simple (mismo patron que en Estadisticas, para consistencia)
 function DropdownSimple({ opciones, valorActual, onSeleccionar }) {
   const [abierto, setAbierto] = useState(false);
   return (
     <View style={{ marginBottom: 10 }}>
       <TouchableOpacity style={styles.dropdownHeader} onPress={() => setAbierto(!abierto)}>
         <Text style={styles.dropdownTexto}>{valorActual}</Text>
-        <Text style={styles.dropdownFlecha}>{abierto ? '▲' : '▼'}</Text>
+        <Text style={styles.dropdownFlecha}>{abierto ? '' : ''}</Text>
       </TouchableOpacity>
       {abierto && (
         <View style={styles.dropdownLista}>
@@ -117,10 +117,10 @@ function FilaUsuario({ item, index, onEditar, onToggleActivo }) {
 
       <View style={[styles.accionesCelda, { flex: 1 }]}>
         <TouchableOpacity style={styles.accionBoton} onPress={() => onEditar(item)}>
-          <Text>✏️</Text>
+          <Text></Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.accionBoton} onPress={() => onToggleActivo(item.id)}>
-          <Text>{item.activo ? '🚫' : '✅'}</Text>
+          <Text>{item.activo ? '' : ''}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -141,20 +141,20 @@ export default function UsuariosScreen() {
     );
   };
 
-  // RF-U02: editar (aquí solo el gancho; abriría un modal/formulario)
+  // RF-U02: editar (aqui solo el gancho; abriria un modal/formulario)
   const editarUsuario = (usuario) => {
     console.log('Editar usuario ->', usuario);
-    // TODO: abrir modal de edición con los datos precargados
+    // TODO: abrir modal de edicion con los datos precargados
   };
 
-  // RF-U01: crear (aquí solo el gancho; abriría un modal/formulario)
+  // RF-U01: crear (aqui solo el gancho; abriria un modal/formulario)
   const nuevoUsuario = () => {
     console.log('Abrir formulario de nuevo usuario');
     // TODO: abrir modal de creación
   };
 
-  // PASO 8: filtrado combinado (búsqueda + rol + estatus). useMemo evita
-  // recalcular en cada render si nada de esto cambió.
+  // PASO 8: filtrado combinado (busqueda + rol + estatus). useMemo evita
+  // recalcular en cada render si nada de esto cambio.
   const usuariosFiltrados = useMemo(() => {
     return usuarios.filter((u) => {
       const coincideBusqueda =
@@ -185,14 +185,14 @@ export default function UsuariosScreen() {
         <TarjetaKPI titulo="Roles definidos" valor={rolesDefinidos} color={COLORS.rolAdmin} />
       </View>
 
-      {/* --- Botón nuevo usuario + búsqueda (RF-U01) --- */}
+      {/* --- Boton nuevo usuario + busqueda (RF-U01) --- */}
       <View style={styles.filaSuperior}>
         <TouchableOpacity style={styles.botonNuevo} onPress={nuevoUsuario}>
           <Text style={styles.botonNuevoTexto}>+ Nuevo usuario</Text>
         </TouchableOpacity>
 
         <View style={styles.buscador}>
-          <Text style={{ marginRight: 6 }}>🔎</Text>
+          <Text style={{ marginRight: 6 }}></Text>
           <TextInput
             placeholder="Buscar por nombre o correo..."
             placeholderTextColor={COLORS.gris}

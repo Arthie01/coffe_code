@@ -78,7 +78,7 @@ function DropdownSimple({ opciones, valorActual, onSeleccionar }) {
     <View style={{ marginBottom: 12 }}>
       <TouchableOpacity style={styles.dropdownHeader} onPress={() => setAbierto(!abierto)}>
         <Text style={styles.dropdownTexto}>{valorActual}</Text>
-        <Text style={styles.dropdownFlecha}>{abierto ? '▲' : '▼'}</Text>
+        <Text style={styles.dropdownFlecha}>{abierto ? '' : ''}</Text>
       </TouchableOpacity>
 
       {abierto && (
@@ -221,10 +221,10 @@ export default function EstadisticasScreen() {
       {/* --- Botones de exportación (RF-E08, RF-E09) --- */}
       <View style={styles.botonesExportar}>
         <TouchableOpacity style={styles.botonPDF} onPress={exportarPDF}>
-          <Text style={styles.botonPDFTexto}>⬇ Exportar PDF</Text>
+          <Text style={styles.botonPDFTexto}> Exportar PDF</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.botonXLSX} onPress={exportarXLSX}>
-          <Text style={styles.botonXLSXTexto}>📊 Exportar XLSX</Text>
+          <Text style={styles.botonXLSXTexto}> Exportar XLSX</Text>
         </TouchableOpacity>
       </View>
 
