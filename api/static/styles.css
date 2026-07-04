@@ -1,0 +1,14 @@
+body {
+  background-color: var(--fondo);
+  color: var(--texto);
+}
+
+button {
+  background-color: var(--acento);
+  color: var(--fondo-tarjeta);
+}
+
+.card {
+  background-color: var(--fondo-tarjeta);
+  border: 1px solid var(--borde);
+}

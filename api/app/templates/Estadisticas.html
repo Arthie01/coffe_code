@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Estadísticas</title>
+   <link rel="stylesheet" href="../static/styles.css">
+  <style>
+    body {
+      background-color: var(--fondo);
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 16px;
+      color: var(--texto);
+    }
+
+    /* KPIs */
+    .kpi-fila {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .kpi-card {
+      background-color: var(--fondo-tarjeta);
+      border-radius: 10px;
+      padding: 12px;
+      width: 48%;
+      margin-bottom: 10px;
+      border: 1px solid var(--borde);
+    }
+    .kpi-titulo {
+      font-size: 11px;
+      color: var(--gris);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .kpi-valor {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    /* Dropdown */
+    .dropdown {
+      margin-bottom: 12px;
+    }
+    .dropdown select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      background-color: var(--negro-barra);
+      color: #fff;
+      border: none;
+      font-weight: 600;
+    }
+
+    /* Botones exportar */
+    .botones-exportar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .boton-pdf {
+      border: 1px solid var(--borde);
+      border-radius: 8px;
+      padding: 10px 14px;
+      opacity: 0.6;
+    }
+    .boton-xlsx {
+      background-color: var(--acento);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    /* Tarjeta grande */
+    .tarjeta-grande {
+      background-color: var(--fondo-tarjeta);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+    .titulo-tarjeta {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gris);
+      margin-bottom: 12px;
+    }
+
+    /* Tabla */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+    }
+    thead {
+      background-color: var(--negro-barra);
+      color: #fff;
+    }
+    th, td {
+      padding: 10px;
+      font-size: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      text-align: left;
+    }
+    .badge {
+      display: inline-block;
+      border-radius: 12px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .badge.pagado { background-color: var(--acento); }
+    .badge.proceso { background-color: var(--amarillo); }
+
+    .footer {
+      text-align: center;
+      color: var(--gris);
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <!-- KPIs -->
+  <div class="kpi-fila">
+    <div class="kpi-card">
+      <div class="kpi-titulo">VENTAS HOY</div>
+      <div class="kpi-valor" style="color: var(--acento);">$4,250</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-titulo">GASTOS HOY</div>
+      <div class="kpi-valor" style="color: var(--rojo);">$850</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-titulo">GANANCIA NETA</div>
+      <div class="kpi-valor" style="color: var(--acento);">$3,400</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-titulo">PEDIDOS ACTIVOS</div>
+      <div class="kpi-valor">12</div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="dropdown">
+    <select>
+      <option>Hoy</option>
+      <option>Esta semana</option>
+      <option>Este mes</option>
+      <option>Personalizado</option>
+    </select>
+  </div>
+  <div class="dropdown">
+    <select>
+      <option>Todos los reportes</option>
+      <option>Ventas</option>
+      <option>Gastos</option>
+      <option>Ganancias</option>
+      <option>Inventario</option>
+    </select>
+  </div>
+
+  <!-- Botones exportar -->
+  <div class="botones-exportar">
+    <button class="boton-pdf">Exportar PDF</button>
+    <button class="boton-xlsx">Exportar XLSX</button>
+  </div>
+
+  <!-- Gráficas (aquí puedes integrar librerías JS como Chart.js) -->
+  <div class="tarjeta-grande">
+    <div class="titulo-tarjeta">FLUJO DE VENTAS DEL DÍA</div>
+    <!-- Aquí iría tu gráfica -->
+  </div>
+
+  <div class="tarjeta-grande">
+    <div class="titulo-tarjeta">PRODUCTOS MÁS VENDIDOS</div>
+    <!-- Aquí iría tu gráfica de productos -->
+  </div>
+
+  <!-- Tabla de pedidos -->
+  <table>
+    <thead>
+      <tr>
+        <th>TICKET</th>
+        <th>MESA</th>
+        <th>MESERO</th>
+        <th>TOTAL</th>
+        <th>MÉTODO</th>
+        <th>ESTATUS</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>#1024</td>
+        <td>Mesa 4</td>
+        <td>López Morales J.</td>
+        <td>$150.00</td>
+        <td>Tarjeta</td>
+        <td><span class="badge pagado">Pagado</span></td>
+      </tr>
+      <tr>
+        <td>#1023</td>
+        <td>Mesa 2</td>
+        <td>Hurtado Hdz. A.</td>
+        <td>$240.00</td>
+        <td>Efectivo</td>
+        <td><span class="badge pagado">Pagado</span></td>
+      </tr>
+      <tr>
+        <td>#1025</td>
+        <td>Para llevar</td>
+        <td>Ledesma L. E.</td>
+        <td>$95.00</td>
+        <td>Transferencia</td>
+        <td><span class="badge proceso">En proceso</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer">3 pedidos en este periodo</div>
+</body>
+</html>
