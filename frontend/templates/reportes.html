@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% set active = "reportes" %}
+{% block title %}Estadísticas — Coffee Code{% endblock %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/panel.css') }}" />
+{% endblock %}
+
+{% block content %}
+<main class="page-main">
+  <div class="page-toprow">
+    <div>
+      <h1 class="page-title">Estadísticas</h1>
+      <p class="page-subtitle">Ganancias, ventas, pedidos e inventario. Exporta a PDF o XLSX.</p>
+    </div>
+  </div>
+
+  {# Filtro por rango de fechas #}
+  <form class="filter-bar" method="GET">
+    <div class="form-group">
+      <label class="form-label" for="desde">Desde</label>
+      <input class="form-control" type="date" id="desde" name="desde" value="{{ desde }}" />
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="hasta">Hasta</label>
+      <input class="form-control" type="date" id="hasta" name="hasta" value="{{ hasta }}" />
+    </div>
+    <button type="submit" class="btn-primary"><i class="fas fa-filter"></i> Aplicar</button>
+    {% if desde or hasta %}
+      <a href="{{ url_for('reportes') }}" class="btn-ghost"><i class="fas fa-rotate-left"></i> Limpiar</a>
+    {% endif %}
+  </form>
+
+  {# Tarjetas resumen (ganancias) #}
+  <div class="stat-grid">
+    <div class="stat-card stat-card--ingreso">
+      <div class="stat-card__icon"><i class="fas fa-arrow-trend-up"></i></div>
+      <div class="stat-card__val">${{ '%.2f' % (ganancias.get('ingresos', 0) or 0) }}</div>
+      <div class="stat-card__lbl">Ingresos</div>
+    </div>
+    <div class="stat-card stat-card--egreso">
+      <div class="stat-card__icon"><i class="fas fa-arrow-trend-down"></i></div>
+      <div class="stat-card__val">${{ '%.2f' % (ganancias.get('egresos', 0) or 0) }}</div>
+      <div class="stat-card__lbl">Egresos</div>
+    </div>
+    <div class="stat-card stat-card--neta">
+      <div class="stat-card__icon"><i class="fas fa-sack-dollar"></i></div>
+      <div class="stat-card__val">${{ '%.2f' % (ganancias.get('ganancia_neta', 0) or 0) }}</div>
+      <div class="stat-card__lbl">Ganancia neta</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__icon"><i class="fas fa-receipt"></i></div>
+      <div class="stat-card__val">{{ pedidos.get('total_pedidos', 0) or 0 }}</div>
+      <div class="stat-card__lbl">Pedidos</div>
+    </div>
+  </div>
+
+  {# Ganancias — descarga #}
+  <div class="report-block">
+    <div class="report-block__head">
+      <span class="report-block__title"><i class="fas fa-sack-dollar"></i> Reporte de ganancias</span>
+      <div class="report-dl">
+        <a href="{{ url_for('descargar_reporte', reporte='ganancias', formato='pdf', desde=desde, hasta=hasta) }}"><i class="fas fa-file-pdf"></i> PDF</a>
+        <a href="{{ url_for('descargar_reporte', reporte='ganancias', formato='xlsx', desde=desde, hasta=hasta) }}"><i class="fas fa-file-excel"></i> XLSX</a>
+      </div>
+    </div>
+    <div class="tbl-scroll">
+      <table class="admin-table">
+        <thead><tr><th>Concepto</th><th>Valor</th></tr></thead>
+        <tbody>
+          <tr><td>Ingresos (pagos)</td><td>${{ '%.2f' % (ganancias.get('ingresos', 0) or 0) }}</td></tr>
+          <tr><td>Egresos (gastos)</td><td>${{ '%.2f' % (ganancias.get('egresos', 0) or 0) }}</td></tr>
+          <tr><td><strong>Ganancia neta</strong></td><td><strong>${{ '%.2f' % (ganancias.get('ganancia_neta', 0) or 0) }}</strong></td></tr>
+          <tr><td>N.º de pagos</td><td>{{ ganancias.get('num_pagos', 0) or 0 }}</td></tr>
+          <tr><td>N.º de gastos</td><td>{{ ganancias.get('num_gastos', 0) or 0 }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {# Más vendidos + Menos vendidos #}
+  <div class="two-col">
+    <div class="report-block">
+      <div class="report-block__head">
+        <span class="report-block__title"><i class="fas fa-fire"></i> Más vendidos</span>
+        <div class="report-dl">
+          <a href="{{ url_for('descargar_reporte', reporte='productos-mas', formato='pdf', desde=desde, hasta=hasta) }}"><i class="fas fa-file-pdf"></i></a>
+          <a href="{{ url_for('descargar_reporte', reporte='productos-mas', formato='xlsx', desde=desde, hasta=hasta) }}"><i class="fas fa-file-excel"></i></a>
+        </div>
+      </div>
+      <div class="tbl-scroll">
+        <table class="admin-table">
+          <thead><tr><th>Producto</th><th>Uds.</th><th>Ingreso</th></tr></thead>
+          <tbody>
+            {% for p in mas_vendidos.get('productos', []) %}
+              <tr><td>{{ p.producto }}</td><td>{{ p.unidades_vendidas }}</td><td>${{ '%.2f' % p.ingreso_generado }}</td></tr>
+            {% else %}
+              <tr><td colspan="3" class="empty-row">Sin datos</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="report-block">
+      <div class="report-block__head">
+        <span class="report-block__title"><i class="fas fa-arrow-down-9-1"></i> Menos vendidos</span>
+        <div class="report-dl">
+          <a href="{{ url_for('descargar_reporte', reporte='productos-menos', formato='pdf', desde=desde, hasta=hasta) }}"><i class="fas fa-file-pdf"></i></a>
+          <a href="{{ url_for('descargar_reporte', reporte='productos-menos', formato='xlsx', desde=desde, hasta=hasta) }}"><i class="fas fa-file-excel"></i></a>
+        </div>
+      </div>
+      <div class="tbl-scroll">
+        <table class="admin-table">
+          <thead><tr><th>Producto</th><th>Uds.</th><th>Ingreso</th></tr></thead>
+          <tbody>
+            {% for p in menos_vendidos.get('productos', []) %}
+              <tr><td>{{ p.producto }}</td><td>{{ p.unidades_vendidas }}</td><td>${{ '%.2f' % p.ingreso_generado }}</td></tr>
+            {% else %}
+              <tr><td colspan="3" class="empty-row">Sin datos</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {# Pedidos por estatus #}
+  <div class="report-block">
+    <div class="report-block__head">
+      <span class="report-block__title"><i class="fas fa-receipt"></i> Pedidos por estatus</span>
+      <div class="report-dl">
+        <a href="{{ url_for('descargar_reporte', reporte='pedidos', formato='pdf', desde=desde, hasta=hasta) }}"><i class="fas fa-file-pdf"></i> PDF</a>
+        <a href="{{ url_for('descargar_reporte', reporte='pedidos', formato='xlsx', desde=desde, hasta=hasta) }}"><i class="fas fa-file-excel"></i> XLSX</a>
+      </div>
+    </div>
+    <div class="tbl-scroll">
+      <table class="admin-table">
+        <thead><tr><th>Estatus</th><th>Cantidad</th><th>Total</th></tr></thead>
+        <tbody>
+          {% for d in pedidos.get('desglose', []) %}
+            <tr><td>{{ d.estatus }}</td><td>{{ d.cantidad }}</td><td>${{ '%.2f' % d.total }}</td></tr>
+          {% else %}
+            <tr><td colspan="3" class="empty-row">Sin datos</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {# Inventario #}
+  <div class="report-block">
+    <div class="report-block__head">
+      <span class="report-block__title"><i class="fas fa-boxes-stacked"></i> Inventario disponible</span>
+      <div class="report-dl">
+        <a href="{{ url_for('descargar_reporte', reporte='inventario', formato='pdf') }}"><i class="fas fa-file-pdf"></i> PDF</a>
+        <a href="{{ url_for('descargar_reporte', reporte='inventario', formato='xlsx') }}"><i class="fas fa-file-excel"></i> XLSX</a>
+      </div>
+    </div>
+    <div class="tbl-scroll">
+      <table class="admin-table">
+        <thead><tr><th>Ingrediente</th><th>Unidad</th><th>Stock actual</th><th>Stock mínimo</th><th>Estado</th></tr></thead>
+        <tbody>
+          {% for i in inventario.get('inventario', []) %}
+            <tr>
+              <td>{{ i.ingrediente }}</td>
+              <td>{{ i.unidad_medida }}</td>
+              <td>{{ i.stock_actual }}</td>
+              <td>{{ i.stock_minimo }}</td>
+              <td>
+                {% if i.bajo_minimo %}
+                  <span class="badge badge--inactivo">Bajo mínimo</span>
+                {% else %}
+                  <span class="badge badge--activo">Disponible</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5" class="empty-row">Sin datos</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+{% endblock %}

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.data.db import get_db
 from app.data.ingrediente import Ingrediente
 from app.models.ingredientes import CrearIngrediente, ActualizarIngrediente
-from app.security.auth import verificar_peticion
+from app.security.oauth2 import verificar_token
 
 router = APIRouter(
     prefix="/v1/ingredientes",
@@ -63,7 +63,7 @@ async def actualizar(id: int, data: ActualizarIngrediente, db: Session = Depends
 
 
 @router.delete("/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_peticion)])
+               dependencies=[Depends(verificar_token)])
 async def eliminar(id: int, db: Session = Depends(get_db)):
     ingrediente = db.query(Ingrediente).filter(Ingrediente.id == id).first()
     if not ingrediente:

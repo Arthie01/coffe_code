@@ -9,7 +9,7 @@ from app.data.ingrediente import Ingrediente
 from app.data.categoria_gasto import CategoriaGasto
 from app.data.usuario import Usuario
 from app.models.gastos import CrearGasto
-from app.security.auth import verificar_peticion
+from app.security.oauth2 import verificar_token
 
 router = APIRouter(
     prefix="/v1/gastos",
@@ -116,7 +116,7 @@ async def crear(data: CrearGasto, db: Session = Depends(get_db)):
 
 
 @router.delete("/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_peticion)])
+               dependencies=[Depends(verificar_token)])
 async def eliminar(id: int, db: Session = Depends(get_db)):
     gasto = db.query(Gasto).filter(Gasto.id == id).first()
     if not gasto:

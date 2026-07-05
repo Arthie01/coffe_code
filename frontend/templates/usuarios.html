@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% set active = "usuarios" %}
+{% block title %}Usuarios — Coffee Code{% endblock %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/panel.css') }}" />
+{% endblock %}
+
+{% block content %}
+<main class="page-main">
+  <div class="page-toprow">
+    <div>
+      <h1 class="page-title">Gestión de Usuarios</h1>
+      <p class="page-subtitle">Crea, edita y asigna roles al personal de la cafetería.</p>
+    </div>
+    <div class="page-kpis">
+      <div class="kpi-card">
+        <span class="kpi-val">{{ kpis.total }}</span>
+        <span class="kpi-lbl">Total</span>
+      </div>
+      <div class="kpi-card kpi-card--ok">
+        <span class="kpi-val">{{ kpis.activos }}</span>
+        <span class="kpi-lbl">Activos</span>
+      </div>
+      <div class="kpi-card kpi-card--warn">
+        <span class="kpi-val">{{ kpis.inactivos }}</span>
+        <span class="kpi-lbl">Inactivos</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="tbar-search-wrap">
+      <i class="fas fa-search tbar-search-icon"></i>
+      <input type="search" id="buscador" class="tbar-search-input"
+             placeholder="Buscar por nombre, correo o rol…" onkeyup="filtrarTabla()" />
+    </div>
+    <div class="tbar-right">
+      <a href="{{ url_for('usuario_nuevo') }}" class="btn-add">
+        <i class="fas fa-user-plus"></i> Nuevo Usuario
+      </a>
+    </div>
+  </div>
+
+  <div class="table-panel">
+    <div class="tbl-scroll">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Usuario</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-usuarios">
+          {% for u in usuarios %}
+          <tr>
+            <td class="td-id">#{{ '%03d' % u.id }}</td>
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar">
+                  {{ (u.nombre[0] if u.nombre else '') ~ (u.apellido_p[0] if u.apellido_p else '') }}
+                </div>
+                <div class="user-cell__info">
+                  <span class="user-cell__name">{{ u.nombre }} {{ u.apellido_p }} {{ u.apellido_m or '' }}</span>
+                  <span class="user-cell__email">{{ u.correo or '—' }}</span>
+                </div>
+              </div>
+            </td>
+            <td><span class="badge badge--rol">{{ u.rol or '—' }}</span></td>
+            <td>
+              {% if u.estatus == 'Activo' %}
+                <span class="badge badge--activo">Activo</span>
+              {% else %}
+                <span class="badge badge--inactivo">{{ u.estatus or 'Inactivo' }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="tbl-actions">
+                <a href="{{ url_for('usuario_editar', id=u.id) }}" class="act-btn act-btn--edit" title="Editar">
+                  <i class="fas fa-pen-to-square"></i>
+                </a>
+                <form method="POST" action="{{ url_for('usuario_eliminar', id=u.id) }}"
+                      onsubmit="return confirm('¿Eliminar a {{ u.nombre }} {{ u.apellido_p }}?');">
+                  <button type="submit" class="act-btn act-btn--del" title="Eliminar">
+                    <i class="fas fa-trash-can"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="empty-row"><i class="fas fa-inbox"></i> No hay usuarios registrados.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="tbl-footer">
+      <span class="tbl-count">Mostrando {{ usuarios|length }} usuario(s)</span>
+    </div>
+  </div>
+</main>
+
+<script>
+  function filtrarTabla() {
+    const q = document.getElementById("buscador").value.toLowerCase();
+    document.querySelectorAll("#tbody-usuarios tr").forEach((row) => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? "" : "none";
+    });
+  }
+</script>
+{% endblock %}

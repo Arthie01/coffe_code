@@ -1,0 +1,147 @@
+/* login.css — Coffee Code (usa variables de theme.css) */
+
+.auth-split { display: grid; grid-template-columns: 1fr 1fr; min-height: 100dvh; }
+
+/* ── Panel izquierdo ─────────────────── */
+.auth-left {
+  background: var(--cc-cafe);
+  position: relative;
+  overflow: hidden;
+  padding: 48px 56px;
+  display: flex;
+  align-items: center;
+}
+.auth-left::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(160deg, rgba(62,39,35,.55) 0%, transparent 55%, rgba(62,39,35,.35) 100%);
+  pointer-events: none;
+}
+.auth-left::after {
+  content: '';
+  position: absolute; top: 0; right: -1px; bottom: 0;
+  width: 70px;
+  background: var(--cc-crema);
+  clip-path: polygon(70px 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.auth-circle { position: absolute; border-radius: 50%; pointer-events: none; }
+.auth-circle--1 { width: 320px; height: 320px; border: 1px solid rgba(255,255,255,.10); top: -100px; left: -80px; }
+.auth-circle--2 { width: 200px; height: 200px; border: 1px solid rgba(255,255,255,.14); bottom: 60px; right: 90px; }
+.auth-circle--3 { width: 80px;  height: 80px;  border: 1px solid rgba(255,255,255,.20); bottom: 220px; left: 50px; }
+
+.auth-left__content { position: relative; z-index: 1; }
+
+.brand-block {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,.12);
+  border: 2px solid rgba(255,255,255,.25);
+  padding: 10px 20px; margin-bottom: 14px;
+}
+.brand-block i { color: var(--cc-caramelo); font-size: 22px; }
+.brand-name {
+  font-family: var(--cc-font-display);
+  font-size: 26px; font-weight: 700; color: #fff; letter-spacing: .12em;
+}
+
+.staff-banner {
+  display: inline-block;
+  background: var(--cc-espresso);
+  border-left: 4px solid var(--cc-caramelo);
+  padding: 8px 20px; margin-bottom: 16px;
+}
+.staff-banner span {
+  font-family: var(--cc-font-display);
+  font-size: 18px; font-weight: 700; color: #fff; letter-spacing: .25em; text-transform: uppercase;
+}
+
+.internal-note { font-size: 12px; color: rgba(255,255,255,.55); letter-spacing: .04em; margin-bottom: 28px; }
+
+.auth-headline {
+  font-family: var(--cc-font-display);
+  font-size: clamp(26px, 3vw, 42px); font-weight: 700; color: #fff;
+  text-transform: uppercase; line-height: 1.15; letter-spacing: .02em; margin-bottom: 16px;
+}
+.auth-headline__muted { color: var(--cc-caramelo); }
+
+.auth-desc { font-size: 14px; color: rgba(255,255,255,.78); line-height: 1.75; max-width: 340px; margin-bottom: 32px; }
+
+.auth-areas { display: flex; gap: 8px; flex-wrap: wrap; }
+.auth-area-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22);
+  border-radius: 4px; padding: 6px 12px; font-size: 12px; color: rgba(255,255,255,.85); font-weight: 500;
+}
+.auth-area-pill i { font-size: 11px; color: var(--cc-caramelo); }
+
+/* ── Panel derecho ───────────────────── */
+.auth-right {
+  background: var(--cc-crema);
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  padding: 60px 56px;
+}
+.auth-form-wrap { width: 100%; max-width: 400px; }
+.auth-form-header { margin-bottom: 32px; }
+
+.auth-eyebrow {
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--cc-font-display); font-size: 12px; color: var(--cc-muted);
+  text-transform: uppercase; letter-spacing: .12em; margin-bottom: 8px;
+}
+.auth-eyebrow i { font-size: 11px; color: var(--cc-cafe); }
+
+.auth-title {
+  font-family: var(--cc-font-display); font-size: 30px; font-weight: 700;
+  text-transform: uppercase; color: var(--cc-texto); margin-bottom: 8px; letter-spacing: .02em;
+}
+.auth-title-line { width: 44px; height: 3px; background: var(--cc-caramelo); border-radius: 2px; }
+
+.mac-form-group { margin-bottom: 20px; }
+
+.mac-label {
+  display: block; font-family: var(--cc-font-display); font-size: 12px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--cc-texto); margin-bottom: 8px;
+}
+
+.mac-input {
+  width: 100%; padding: 12px 16px; font-family: var(--cc-font-body); font-size: 14px;
+  color: var(--cc-texto); background: #fff; border: 2px solid var(--cc-borde);
+  border-radius: 6px; outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.mac-input:focus { border-color: var(--cc-cafe); box-shadow: 0 0 0 3px rgba(111,78,55,.12); }
+.mac-input::placeholder { color: var(--cc-muted); }
+
+.mac-input-icon { position: relative; }
+.mac-input-icon .mac-input { padding-left: 44px; }
+.mac-input-icon__icon {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  color: var(--cc-muted); font-size: 15px; pointer-events: none;
+}
+.mac-eye-btn {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; color: var(--cc-muted); font-size: 14px;
+}
+.mac-eye-btn:hover { color: var(--cc-texto); }
+
+.mac-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--cc-font-display); font-size: 14px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .08em; border: none; border-radius: 6px; cursor: pointer;
+  transition: all .2s; text-decoration: none;
+}
+.mac-btn--primary { background: var(--cc-cafe); color: #fff; padding: 12px 24px; }
+.mac-btn--primary:hover { background: var(--cc-espresso); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(111,78,55,.3); }
+.mac-btn--lg { padding: 16px 32px; font-size: 16px; }
+.mac-btn--block { width: 100%; margin: 8px 0 20px; }
+
+.auth-support-note {
+  text-align: center; font-size: 13px; color: var(--cc-muted);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.auth-support-note i { font-size: 12px; color: var(--cc-caramelo); }
+
+@media (max-width: 768px) {
+  .auth-split { grid-template-columns: 1fr; }
+  .auth-left  { display: none; }
+  .auth-right { padding: 40px 24px; }
+}

@@ -22,8 +22,13 @@ from app.data.mesero_pedido import MeseroPedido
 from app.data.pago import Pago
 from app.data.gasto import Gasto
 from app.data.compra_ingrediente import CompraIngrediente
+from app.data.turno import Turno
+from app.data.asignacion_turno import AsignacionTurno
 
-from app.routers import auth, catalogos, mesas, ingredientes, usuarios, comidas, pedidos, pagos, gastos
+from app.routers import (
+    auth, catalogos, mesas, ingredientes, usuarios, comidas,
+    pedidos, pagos, gastos, turnos, asignaciones_turno, reportes
+)
 
 os.makedirs("/app/uploads/comidas", exist_ok=True)
 
@@ -62,6 +67,11 @@ def seed_db():
             Estatus(nombre="Disponible"),
             Estatus(nombre="Ocupada"),
             Estatus(nombre="Reservada"),
+            # ── Estatus de turnos ──
+            Estatus(nombre="Programado"),   # id 11
+            Estatus(nombre="En turno"),     # id 12
+            Estatus(nombre="Finalizado"),   # id 13
+            Estatus(nombre="Ausente"),      # id 14
         ])
         db.flush()
 
@@ -126,7 +136,7 @@ def seed_db():
         ])
         db.flush()
 
-        # ── 8. Usuarios ─────────────────────────────────────────
+        # ── 8. Usuarios ───────────────────────────────────────
         usuarios_data = [
             ("Artemio",  "Hurtado",  "Reyes",    1, 1, "admin@coffee.mx",     "admin123"),
             ("María",    "López",    "García",   2, 1, "maria@coffee.mx",     "mesero123"),
@@ -207,7 +217,7 @@ def seed_db():
         db.flush()
 
         # ── 11. Pedidos de ejemplo ───────────────────────────────
-        from datetime import datetime
+        from datetime import datetime, time, date
 
         p1 = Pedido(id_mesa=1, id_estatus=6, precio_total=175.00, fecha_hora=datetime(2026, 6, 28, 9, 15))
         p2 = Pedido(id_mesa=3, id_estatus=5, precio_total=125.00, notas="Sin azúcar el café", fecha_hora=datetime(2026, 6, 28, 10, 30))
@@ -252,6 +262,36 @@ def seed_db():
             monto_total=175.00, monto_recibido=200.00, cambio=25.00
         ))
 
+        # ── 12. Turnos (catálogo) ────────────────────────────────
+        db.add_all([
+            Turno(nombre="Matutino",     hora_inicio=time(7, 0),  hora_fin=time(15, 0)),
+            Turno(nombre="Vespertino",   hora_inicio=time(15, 0), hora_fin=time(23, 0)),
+            Turno(nombre="Nocturno",     hora_inicio=time(23, 0), hora_fin=time(7, 0)),
+            Turno(nombre="Medio tiempo", hora_inicio=time(10, 0), hora_fin=time(14, 0)),
+        ])
+        db.flush()
+
+        # ── 13. Asignaciones de turno de ejemplo ─────────────────
+        # estatus: 11=Programado, 12=En turno, 13=Finalizado
+        db.add_all([
+            # María (mesera) — turno matutino ya finalizado (entrada y salida)
+            AsignacionTurno(
+                id_usuario=2, id_turno=1, id_estatus=13, fecha=date(2026, 6, 28),
+                hora_entrada=datetime(2026, 6, 28, 6, 58),
+                hora_salida=datetime(2026, 6, 28, 15, 3)
+            ),
+            # Roberto (cocinero) — matutino, actualmente en turno (solo entrada)
+            AsignacionTurno(
+                id_usuario=3, id_turno=1, id_estatus=12, fecha=date(2026, 6, 28),
+                hora_entrada=datetime(2026, 6, 28, 7, 1)
+            ),
+            # Carlos (mesero) — vespertino programado (aún sin checar)
+            AsignacionTurno(
+                id_usuario=5, id_turno=2, id_estatus=11, fecha=date(2026, 6, 28)
+            ),
+        ])
+        db.flush()
+
         db.commit()
         print("==> Seed completado: catálogos, usuarios, menú, pedidos y pago insertados.")
 
@@ -281,6 +321,9 @@ app.include_router(comidas.router)
 app.include_router(pedidos.router)
 app.include_router(pagos.router)
 app.include_router(gastos.router)
+app.include_router(turnos.router)
+app.include_router(asignaciones_turno.router)
+app.include_router(reportes.router)
 
 
 @app.get("/")

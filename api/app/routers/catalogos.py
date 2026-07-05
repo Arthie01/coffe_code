@@ -14,7 +14,7 @@ from app.models.catalogos import (
     CrearCategoriaGasto, ActualizarCategoriaGasto,
     CrearCategoriaComida, ActualizarCategoriaComida,
 )
-from app.security.auth import verificar_peticion
+from app.security.oauth2 import verificar_token
 
 router = APIRouter(
     prefix="/v1/catalogos",
@@ -57,7 +57,7 @@ async def actualizar_rol(id: int, data: ActualizarRol, db: Session = Depends(get
 
 
 @router.delete("/roles/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_peticion)])
+               dependencies=[Depends(verificar_token)])
 async def eliminar_rol(id: int, db: Session = Depends(get_db)):
     rol = db.query(Rol).filter(Rol.id == id).first()
     if not rol:
@@ -102,7 +102,7 @@ async def actualizar_estatus(id: int, data: ActualizarEstatus, db: Session = Dep
 
 
 @router.delete("/estatus/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_peticion)])
+               dependencies=[Depends(verificar_token)])
 async def eliminar_estatus(id: int, db: Session = Depends(get_db)):
     est = db.query(Estatus).filter(Estatus.id == id).first()
     if not est:
@@ -147,7 +147,7 @@ async def actualizar_metodo_pago(id: int, data: ActualizarMetodoPago, db: Sessio
 
 
 @router.delete("/metodos-pago/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_peticion)])
+               dependencies=[Depends(verificar_token)])
 async def eliminar_metodo_pago(id: int, db: Session = Depends(get_db)):
     metodo = db.query(MetodoPago).filter(MetodoPago.id == id).first()
     if not metodo:
@@ -192,7 +192,7 @@ async def actualizar_categoria_gasto(id: int, data: ActualizarCategoriaGasto, db
 
 
 @router.delete("/categorias-gasto/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_peticion)])
+               dependencies=[Depends(verificar_token)])
 async def eliminar_categoria_gasto(id: int, db: Session = Depends(get_db)):
     cat = db.query(CategoriaGasto).filter(CategoriaGasto.id == id).first()
     if not cat:
@@ -237,7 +237,7 @@ async def actualizar_categoria_comida(id: int, data: ActualizarCategoriaComida, 
 
 
 @router.delete("/categorias-comida/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_peticion)])
+               dependencies=[Depends(verificar_token)])
 async def eliminar_categoria_comida(id: int, db: Session = Depends(get_db)):
     cat = db.query(CategoriaComida).filter(CategoriaComida.id == id).first()
     if not cat:

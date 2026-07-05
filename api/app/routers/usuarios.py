@@ -9,7 +9,7 @@ from app.data.credencial_usuario import CredencialUsuario
 from app.data.rol import Rol
 from app.data.estatus import Estatus
 from app.models.usuarios import CrearUsuario, ActualizarUsuario
-from app.security.auth import verificar_peticion
+from app.security.oauth2 import verificar_token
 
 router = APIRouter(
     prefix="/v1/usuarios",
@@ -131,7 +131,7 @@ async def actualizar(id: int, data: ActualizarUsuario, db: Session = Depends(get
 
 
 @router.delete("/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_peticion)])
+               dependencies=[Depends(verificar_token)])
 async def eliminar(id: int, db: Session = Depends(get_db)):
     usuario = db.query(Usuario).filter(Usuario.id == id).first()
     if not usuario:

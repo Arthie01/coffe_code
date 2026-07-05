@@ -6,7 +6,7 @@ from app.data.db import get_db
 from app.data.mesa import Mesa
 from app.data.estatus import Estatus
 from app.models.mesas import CrearMesa, ActualizarMesa
-from app.security.auth import verificar_peticion
+from app.security.oauth2 import verificar_token
 
 router = APIRouter(
     prefix="/v1/mesas",
@@ -82,7 +82,7 @@ async def actualizar(id: int, data: ActualizarMesa, db: Session = Depends(get_db
 
 
 @router.delete("/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_peticion)])
+               dependencies=[Depends(verificar_token)])
 async def eliminar(id: int, db: Session = Depends(get_db)):
     mesa = db.query(Mesa).filter(Mesa.id == id).first()
     if not mesa:

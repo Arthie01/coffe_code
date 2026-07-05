@@ -12,7 +12,7 @@ from app.data.ingrediente import Ingrediente
 from app.data.categoria_comida import CategoriaComida
 from app.data.estatus import Estatus
 from app.models.comidas import CrearComida, ActualizarComida
-from app.security.auth import verificar_peticion
+from app.security.oauth2 import verificar_token
 
 router = APIRouter(
     prefix="/v1/comidas",
@@ -164,7 +164,7 @@ async def actualizar(id: int, data: ActualizarComida, db: Session = Depends(get_
 
 
 @router.delete("/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_peticion)])
+               dependencies=[Depends(verificar_token)])
 async def eliminar(id: int, db: Session = Depends(get_db)):
     comida = db.query(Comida).filter(Comida.id == id).first()
     if not comida:

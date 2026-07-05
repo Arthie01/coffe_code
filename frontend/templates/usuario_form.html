@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% set active = "usuarios" %}
+{% block title %}{{ 'Nuevo' if modo == 'nuevo' else 'Editar' }} usuario — Coffee Code{% endblock %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/panel.css') }}" />
+{% endblock %}
+
+{% block content %}
+<main class="page-main">
+  <div class="page-toprow">
+    <div>
+      <h1 class="page-title">{{ 'Nuevo Usuario' if modo == 'nuevo' else 'Editar Usuario' }}</h1>
+      <p class="page-subtitle">
+        {{ 'Registra un nuevo miembro del personal y asígnale un rol.' if modo == 'nuevo'
+           else 'Actualiza los datos, rol o estado del usuario.' }}
+      </p>
+    </div>
+  </div>
+
+  <form class="form-panel" method="POST">
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label" for="nombre">Nombre</label>
+        <input class="form-control" id="nombre" name="nombre" required
+               value="{{ usuario.get('nombre', '') }}" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="apellido_p">Apellido paterno</label>
+        <input class="form-control" id="apellido_p" name="apellido_p" required
+               value="{{ usuario.get('apellido_p', '') }}" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="apellido_m">Apellido materno</label>
+        <input class="form-control" id="apellido_m" name="apellido_m"
+               value="{{ usuario.get('apellido_m', '') or '' }}" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="id_rol">Rol</label>
+        <select class="form-control" id="id_rol" name="id_rol" required>
+          <option value="" disabled {% if not usuario.get('id_rol') %}selected{% endif %}>Selecciona…</option>
+          {% for r in roles %}
+            <option value="{{ r.id }}" {% if usuario.get('id_rol') == r.id %}selected{% endif %}>{{ r.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="id_estatus">Estado</label>
+        <select class="form-control" id="id_estatus" name="id_estatus" required>
+          {% for e in estatus %}
+            <option value="{{ e.id }}"
+              {% if usuario.get('id_estatus') == e.id or (not usuario.get('id_estatus') and e.nombre == 'Activo') %}selected{% endif %}>
+              {{ e.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if modo == 'nuevo' %}
+      <div class="form-group form-group--full">
+        <label class="form-label" for="correo">Correo</label>
+        <input class="form-control" id="correo" name="correo" type="email" required
+               value="{{ usuario.get('correo', '') }}" placeholder="usuario@coffee.mx" />
+      </div>
+      <div class="form-group form-group--full">
+        <label class="form-label" for="password">Contraseña</label>
+        <input class="form-control" id="password" name="password" type="password" required
+               placeholder="Mínimo 6 caracteres" />
+      </div>
+      {% else %}
+      <div class="form-group form-group--full">
+        <label class="form-label">Correo</label>
+        <input class="form-control" value="{{ usuario.get('correo', '—') }}" disabled />
+        <small style="color: var(--cc-muted); font-size: 12px;">El correo y la contraseña no se editan desde aquí.</small>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">
+        <i class="fas fa-floppy-disk"></i> {{ 'Crear usuario' if modo == 'nuevo' else 'Guardar cambios' }}
+      </button>
+      <a href="{{ url_for('usuarios') }}" class="btn-ghost"><i class="fas fa-xmark"></i> Cancelar</a>
+    </div>
+  </form>
+</main>
+{% endblock %}

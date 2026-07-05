@@ -49,6 +49,23 @@ services:
     networks:
       - coffee-network
 
+  # ── Frontend (Flask — panel de administración) ──
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: coffee_code_frontend
+    ports:
+      - "5001:5000"
+    environment:
+      - API_URL=http://fastapi:8000
+      - FLASK_SECRET_KEY=coffee-code-frontend-secret-cambiar
+    depends_on:
+      - fastapi
+    restart: unless-stopped
+    networks:
+      - coffee-network
+
 # ── Volúmenes ─────────────────────────────────
 volumes:
   postgres_data:

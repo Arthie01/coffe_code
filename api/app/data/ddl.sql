@@ -151,3 +151,24 @@ CREATE TABLE IF NOT EXISTS compra_ingredientes (
     cantidad         NUMERIC(10,3) NOT NULL CHECK (cantidad > 0),
     precio_unitario  NUMERIC(10,2) NOT NULL CHECK (precio_unitario >= 0)
 );
+
+-- 15. Turnos (catálogo de tipos de turno)
+CREATE TABLE IF NOT EXISTS turnos (
+    id           SERIAL      PRIMARY KEY,
+    nombre       VARCHAR(50) NOT NULL UNIQUE,
+    hora_inicio  TIME        NOT NULL,
+    hora_fin     TIME        NOT NULL
+);
+
+-- 16. Asignaciones de turno (programación + control de asistencia)
+CREATE TABLE IF NOT EXISTS asignaciones_turno (
+    id            SERIAL    PRIMARY KEY,
+    id_usuario    INT       NOT NULL REFERENCES usuarios(id),
+    id_turno      INT       NOT NULL REFERENCES turnos(id),
+    id_estatus    INT       NOT NULL REFERENCES estatus(id),
+    fecha         DATE      NOT NULL DEFAULT CURRENT_DATE,
+    hora_entrada  TIMESTAMP,
+    hora_salida   TIMESTAMP,
+    notas         TEXT,
+    UNIQUE (id_usuario, id_turno, fecha)
+);

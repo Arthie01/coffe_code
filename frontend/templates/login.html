@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Acceso — Coffee Code</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}" />
+  </head>
+  <body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-stack">
+          {% for category, message in messages %}
+            <div class="flash flash--{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <div class="auth-split">
+      {# Panel izquierdo — identidad #}
+      <div class="auth-left">
+        <div class="auth-circle auth-circle--1"></div>
+        <div class="auth-circle auth-circle--2"></div>
+        <div class="auth-circle auth-circle--3"></div>
+
+        <div class="auth-left__content">
+          <div class="brand-block">
+            <i class="fas fa-mug-hot"></i>
+            <span class="brand-name">COFFEE CODE</span>
+          </div>
+
+          <div class="staff-banner"><span>ADMINISTRACIÓN</span></div>
+
+          <p class="internal-note">Solo personal autorizado de la cafetería</p>
+
+          <h1 class="auth-headline">
+            Panel de<br />gestión<br />
+            <span class="auth-headline__muted">general</span>
+          </h1>
+
+          <p class="auth-desc">
+            Administra usuarios y roles, y consulta las estadísticas de ventas,
+            gastos e inventario de Coffee Code.
+          </p>
+
+          <div class="auth-areas">
+            <span class="auth-area-pill"><i class="fas fa-users"></i> Usuarios</span>
+            <span class="auth-area-pill"><i class="fas fa-chart-line"></i> Estadísticas</span>
+            <span class="auth-area-pill"><i class="fas fa-file-pdf"></i> Reportes</span>
+          </div>
+        </div>
+      </div>
+
+      {# Panel derecho — formulario #}
+      <div class="auth-right">
+        <div class="auth-form-wrap">
+          <div class="auth-form-header">
+            <p class="auth-eyebrow"><i class="fas fa-lock"></i> Portal Interno</p>
+            <h2 class="auth-title">Iniciar Sesión</h2>
+            <div class="auth-title-line"></div>
+          </div>
+
+          <form method="POST" action="{{ url_for('login') }}" novalidate>
+            <div class="mac-form-group">
+              <label class="mac-label" for="email">Correo</label>
+              <div class="mac-input-icon">
+                <i class="mac-input-icon__icon fas fa-envelope"></i>
+                <input type="email" id="email" name="email" class="mac-input"
+                       placeholder="admin@coffee.mx" autocomplete="email" required />
+              </div>
+            </div>
+
+            <div class="mac-form-group">
+              <label class="mac-label" for="password">Contraseña</label>
+              <div class="mac-input-icon">
+                <i class="mac-input-icon__icon fas fa-key"></i>
+                <input type="password" id="password" name="password" class="mac-input"
+                       placeholder="••••••••" autocomplete="current-password" required />
+                <button type="button" class="mac-eye-btn" onclick="togglePass()" aria-label="Mostrar contraseña">
+                  <i class="fas fa-eye" id="eye-icon"></i>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" class="mac-btn mac-btn--primary mac-btn--block mac-btn--lg">
+              <i class="fas fa-right-to-bracket"></i> INGRESAR AL SISTEMA
+            </button>
+
+            <p class="auth-support-note">
+              <i class="fas fa-circle-info"></i>
+              Acceso exclusivo para Admin y Cajero
+            </p>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function togglePass() {
+        const input = document.getElementById("password");
+        const icon = document.getElementById("eye-icon");
+        input.type = input.type === "password" ? "text" : "password";
+        icon.className = input.type === "password" ? "fas fa-eye" : "fas fa-eye-slash";
+      }
+    </script>
+  </body>
+</html>
