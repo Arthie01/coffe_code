@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { SafeAreaView, View, Text, StyleSheet, SectionList, TextInput, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useOrders } from '../context/OrderContext';
 import colors from '../theme/colors';
 import fonts from '../theme/fonts';
@@ -45,7 +46,9 @@ export default function FlatListScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.mesaBar}>
-        <Text style={styles.mesaText}>📍 {mesaActual || 'Sin mesa seleccionada'}</Text>
+        <Text style={styles.mesaText}>
+          <Ionicons name="location-outline" size={13} color={colors.primary} /> {mesaActual || 'Sin mesa seleccionada'}
+        </Text>
       </View>
 
       <View style={styles.header}>
@@ -57,7 +60,9 @@ export default function FlatListScreen({ navigation }) {
           onChangeText={setBusqueda}
         />
         <Pressable style={styles.cart} onPress={() => navigation.navigate('Confirmar')}>
-          <Text style={styles.cartText}>🛒 {totalItems}</Text>
+          <Text style={styles.cartText}>
+            <Ionicons name="cart-outline" size={14} color={colors.white} /> {totalItems}
+          </Text>
         </Pressable>
       </View>
 

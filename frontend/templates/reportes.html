@@ -12,25 +12,35 @@
       <h1 class="page-title">Estadísticas</h1>
       <p class="page-subtitle">Ganancias, ventas, pedidos e inventario. Exporta a PDF o XLSX.</p>
     </div>
+    <div class="dl-todo">
+      <span class="dl-todo__label"><i class="fas fa-download"></i> Descargar todo</span>
+      <a class="btn-add" href="{{ url_for('descargar_reporte', reporte='general', formato='pdf', desde=desde, hasta=hasta) }}">
+        <i class="fas fa-file-pdf"></i> PDF
+      </a>
+      <a class="btn-export" href="{{ url_for('descargar_reporte', reporte='general', formato='xlsx', desde=desde, hasta=hasta) }}">
+        <i class="fas fa-file-excel"></i> XLSX
+      </a>
+    </div>
   </div>
 
-  {# Filtro por rango de fechas #}
-  <form class="filter-bar" method="GET">
-    <div class="form-group">
-      <label class="form-label" for="desde">Desde</label>
-      <input class="form-control" type="date" id="desde" name="desde" value="{{ desde }}" />
+  {# ── Filtro: chips de rango rápido + rango personalizado ── #}
+  <div class="filter-bar">
+    <div class="chip-row">
+      {% for p in presets %}
+        <a href="{{ url_for('reportes', desde=p.desde, hasta=p.hasta) }}"
+           class="chip {% if preset_activo == p.key %}chip--on{% endif %}">{{ p.label }}</a>
+      {% endfor %}
     </div>
-    <div class="form-group">
-      <label class="form-label" for="hasta">Hasta</label>
-      <input class="form-control" type="date" id="hasta" name="hasta" value="{{ hasta }}" />
-    </div>
-    <button type="submit" class="btn-primary"><i class="fas fa-filter"></i> Aplicar</button>
-    {% if desde or hasta %}
-      <a href="{{ url_for('reportes') }}" class="btn-ghost"><i class="fas fa-rotate-left"></i> Limpiar</a>
-    {% endif %}
-  </form>
+    <form class="custom-range" method="GET">
+      <span class="cr-label"><i class="fas fa-sliders"></i> Personalizado:</span>
+      <input class="cr-input" type="date" name="desde" value="{{ desde }}" />
+      <span class="cr-dash">—</span>
+      <input class="cr-input" type="date" name="hasta" value="{{ hasta }}" />
+      <button type="submit" class="btn-primary btn-sm"><i class="fas fa-filter"></i> Aplicar</button>
+    </form>
+  </div>
 
-  {# Tarjetas resumen (ganancias) #}
+  {# ── KPIs de ganancias ── #}
   <div class="stat-grid">
     <div class="stat-card stat-card--ingreso">
       <div class="stat-card__icon"><i class="fas fa-arrow-trend-up"></i></div>
@@ -54,132 +64,159 @@
     </div>
   </div>
 
-  {# Ganancias — descarga #}
-  <div class="report-block">
-    <div class="report-block__head">
-      <span class="report-block__title"><i class="fas fa-sack-dollar"></i> Reporte de ganancias</span>
-      <div class="report-dl">
-        <a href="{{ url_for('descargar_reporte', reporte='ganancias', formato='pdf', desde=desde, hasta=hasta) }}"><i class="fas fa-file-pdf"></i> PDF</a>
-        <a href="{{ url_for('descargar_reporte', reporte='ganancias', formato='xlsx', desde=desde, hasta=hasta) }}"><i class="fas fa-file-excel"></i> XLSX</a>
-      </div>
-    </div>
-    <div class="tbl-scroll">
-      <table class="admin-table">
-        <thead><tr><th>Concepto</th><th>Valor</th></tr></thead>
-        <tbody>
-          <tr><td>Ingresos (pagos)</td><td>${{ '%.2f' % (ganancias.get('ingresos', 0) or 0) }}</td></tr>
-          <tr><td>Egresos (gastos)</td><td>${{ '%.2f' % (ganancias.get('egresos', 0) or 0) }}</td></tr>
-          <tr><td><strong>Ganancia neta</strong></td><td><strong>${{ '%.2f' % (ganancias.get('ganancia_neta', 0) or 0) }}</strong></td></tr>
-          <tr><td>N.º de pagos</td><td>{{ ganancias.get('num_pagos', 0) or 0 }}</td></tr>
-          <tr><td>N.º de gastos</td><td>{{ ganancias.get('num_gastos', 0) or 0 }}</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  {# Más vendidos + Menos vendidos #}
-  <div class="two-col">
+  {# ── Gráficas ── #}
+  <div class="chart-grid">
     <div class="report-block">
       <div class="report-block__head">
-        <span class="report-block__title"><i class="fas fa-fire"></i> Más vendidos</span>
+        <span class="report-block__title"><i class="fas fa-scale-balanced"></i> Ingresos vs Egresos</span>
+        <div class="report-dl">
+          <a href="{{ url_for('descargar_reporte', reporte='ganancias', formato='pdf', desde=desde, hasta=hasta) }}"><i class="fas fa-file-pdf"></i></a>
+          <a href="{{ url_for('descargar_reporte', reporte='ganancias', formato='xlsx', desde=desde, hasta=hasta) }}"><i class="fas fa-file-excel"></i></a>
+        </div>
+      </div>
+      <div class="chart-box"><canvas id="chartGanancias"></canvas></div>
+    </div>
+
+    <div class="report-block">
+      <div class="report-block__head">
+        <span class="report-block__title"><i class="fas fa-chart-pie"></i> Pedidos por estatus</span>
+        <div class="report-dl">
+          <a href="{{ url_for('descargar_reporte', reporte='pedidos', formato='pdf', desde=desde, hasta=hasta) }}"><i class="fas fa-file-pdf"></i></a>
+          <a href="{{ url_for('descargar_reporte', reporte='pedidos', formato='xlsx', desde=desde, hasta=hasta) }}"><i class="fas fa-file-excel"></i></a>
+        </div>
+      </div>
+      <div class="chart-box"><canvas id="chartPedidos"></canvas></div>
+    </div>
+
+    <div class="report-block">
+      <div class="report-block__head">
+        <span class="report-block__title"><i class="fas fa-fire"></i> Top 5 más vendidos</span>
         <div class="report-dl">
           <a href="{{ url_for('descargar_reporte', reporte='productos-mas', formato='pdf', desde=desde, hasta=hasta) }}"><i class="fas fa-file-pdf"></i></a>
           <a href="{{ url_for('descargar_reporte', reporte='productos-mas', formato='xlsx', desde=desde, hasta=hasta) }}"><i class="fas fa-file-excel"></i></a>
         </div>
       </div>
-      <div class="tbl-scroll">
-        <table class="admin-table">
-          <thead><tr><th>Producto</th><th>Uds.</th><th>Ingreso</th></tr></thead>
-          <tbody>
-            {% for p in mas_vendidos.get('productos', []) %}
-              <tr><td>{{ p.producto }}</td><td>{{ p.unidades_vendidas }}</td><td>${{ '%.2f' % p.ingreso_generado }}</td></tr>
-            {% else %}
-              <tr><td colspan="3" class="empty-row">Sin datos</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+      <div class="chart-box"><canvas id="chartMas"></canvas></div>
     </div>
 
     <div class="report-block">
       <div class="report-block__head">
-        <span class="report-block__title"><i class="fas fa-arrow-down-9-1"></i> Menos vendidos</span>
+        <span class="report-block__title"><i class="fas fa-arrow-down-9-1"></i> Top 5 menos vendidos</span>
         <div class="report-dl">
           <a href="{{ url_for('descargar_reporte', reporte='productos-menos', formato='pdf', desde=desde, hasta=hasta) }}"><i class="fas fa-file-pdf"></i></a>
           <a href="{{ url_for('descargar_reporte', reporte='productos-menos', formato='xlsx', desde=desde, hasta=hasta) }}"><i class="fas fa-file-excel"></i></a>
         </div>
       </div>
-      <div class="tbl-scroll">
-        <table class="admin-table">
-          <thead><tr><th>Producto</th><th>Uds.</th><th>Ingreso</th></tr></thead>
-          <tbody>
-            {% for p in menos_vendidos.get('productos', []) %}
-              <tr><td>{{ p.producto }}</td><td>{{ p.unidades_vendidas }}</td><td>${{ '%.2f' % p.ingreso_generado }}</td></tr>
-            {% else %}
-              <tr><td colspan="3" class="empty-row">Sin datos</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+      <div class="chart-box"><canvas id="chartMenos"></canvas></div>
     </div>
-  </div>
 
-  {# Pedidos por estatus #}
-  <div class="report-block">
-    <div class="report-block__head">
-      <span class="report-block__title"><i class="fas fa-receipt"></i> Pedidos por estatus</span>
-      <div class="report-dl">
-        <a href="{{ url_for('descargar_reporte', reporte='pedidos', formato='pdf', desde=desde, hasta=hasta) }}"><i class="fas fa-file-pdf"></i> PDF</a>
-        <a href="{{ url_for('descargar_reporte', reporte='pedidos', formato='xlsx', desde=desde, hasta=hasta) }}"><i class="fas fa-file-excel"></i> XLSX</a>
+    <div class="report-block report-block--wide">
+      <div class="report-block__head">
+        <span class="report-block__title"><i class="fas fa-boxes-stacked"></i> Inventario: stock actual vs mínimo</span>
+        <div class="report-dl">
+          <a href="{{ url_for('descargar_reporte', reporte='inventario', formato='pdf') }}"><i class="fas fa-file-pdf"></i></a>
+          <a href="{{ url_for('descargar_reporte', reporte='inventario', formato='xlsx') }}"><i class="fas fa-file-excel"></i></a>
+        </div>
       </div>
-    </div>
-    <div class="tbl-scroll">
-      <table class="admin-table">
-        <thead><tr><th>Estatus</th><th>Cantidad</th><th>Total</th></tr></thead>
-        <tbody>
-          {% for d in pedidos.get('desglose', []) %}
-            <tr><td>{{ d.estatus }}</td><td>{{ d.cantidad }}</td><td>${{ '%.2f' % d.total }}</td></tr>
-          {% else %}
-            <tr><td colspan="3" class="empty-row">Sin datos</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  {# Inventario #}
-  <div class="report-block">
-    <div class="report-block__head">
-      <span class="report-block__title"><i class="fas fa-boxes-stacked"></i> Inventario disponible</span>
-      <div class="report-dl">
-        <a href="{{ url_for('descargar_reporte', reporte='inventario', formato='pdf') }}"><i class="fas fa-file-pdf"></i> PDF</a>
-        <a href="{{ url_for('descargar_reporte', reporte='inventario', formato='xlsx') }}"><i class="fas fa-file-excel"></i> XLSX</a>
-      </div>
-    </div>
-    <div class="tbl-scroll">
-      <table class="admin-table">
-        <thead><tr><th>Ingrediente</th><th>Unidad</th><th>Stock actual</th><th>Stock mínimo</th><th>Estado</th></tr></thead>
-        <tbody>
-          {% for i in inventario.get('inventario', []) %}
-            <tr>
-              <td>{{ i.ingrediente }}</td>
-              <td>{{ i.unidad_medida }}</td>
-              <td>{{ i.stock_actual }}</td>
-              <td>{{ i.stock_minimo }}</td>
-              <td>
-                {% if i.bajo_minimo %}
-                  <span class="badge badge--inactivo">Bajo mínimo</span>
-                {% else %}
-                  <span class="badge badge--activo">Disponible</span>
-                {% endif %}
-              </td>
-            </tr>
-          {% else %}
-            <tr><td colspan="5" class="empty-row">Sin datos</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <div class="chart-box chart-box--tall"><canvas id="chartInv"></canvas></div>
     </div>
   </div>
 </main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  const G     = {{ ganancias | tojson }};
+  const MAS   = {{ mas_vendidos.get('productos', []) | tojson }};
+  const MENOS = {{ menos_vendidos.get('productos', []) | tojson }};
+  const PED   = {{ pedidos.get('desglose', []) | tojson }};
+  const INV   = {{ inventario.get('inventario', []) | tojson }};
+
+  // Paleta (theme/colors.js de la app móvil)
+  const C = {
+    green:  "#00704A",
+    dark:   "#00563A",
+    gold:   "#E0A800",
+    danger: "#C0392B",
+    sage:   "#E3E7D3",
+    muted:  "#6B6B6B",
+  };
+  const PALETA = ["#00704A", "#E0A800", "#00563A", "#7FA37E", "#C0392B", "#B7B6C2", "#4A8C6F"];
+
+  Chart.defaults.font.family = "'Space Grotesk', sans-serif";
+  Chart.defaults.color = "#14231C";
+
+  function vacio(id, texto) {
+    const cv = document.getElementById(id);
+    const ctx = cv.getContext("2d");
+    ctx.font = "14px 'Space Grotesk'";
+    ctx.fillStyle = C.muted;
+    ctx.textAlign = "center";
+    ctx.fillText(texto || "Sin datos para el periodo", cv.width / 2, cv.height / 2);
+  }
+
+  // 1) Ingresos vs Egresos (barras)
+  if (G && (G.ingresos != null)) {
+    new Chart("chartGanancias", {
+      type: "bar",
+      data: {
+        labels: ["Ingresos", "Egresos", "Ganancia neta"],
+        datasets: [{
+          data: [G.ingresos || 0, G.egresos || 0, G.ganancia_neta || 0],
+          backgroundColor: [C.green, C.danger, C.gold],
+          borderRadius: 6,
+        }],
+      },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } } },
+    });
+  } else { vacio("chartGanancias"); }
+
+  // 2) Pedidos por estatus (dona)
+  if (PED.length) {
+    new Chart("chartPedidos", {
+      type: "doughnut",
+      data: {
+        labels: PED.map(p => p.estatus),
+        datasets: [{ data: PED.map(p => p.cantidad), backgroundColor: PALETA, borderWidth: 2, borderColor: "#fff" }],
+      },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: "right", labels: { boxWidth: 14, padding: 12 } } } },
+    });
+  } else { vacio("chartPedidos"); }
+
+  // 3) Más vendidos (barras horizontales)
+  function barrasProductos(id, arr, color) {
+    if (!arr.length) { vacio(id); return; }
+    new Chart(id, {
+      type: "bar",
+      data: {
+        labels: arr.map(p => p.producto),
+        datasets: [{ label: "Unidades", data: arr.map(p => p.unidades_vendidas), backgroundColor: color, borderRadius: 6 }],
+      },
+      options: { indexAxis: "y", responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } },
+    });
+  }
+  barrasProductos("chartMas", MAS, C.green);
+  barrasProductos("chartMenos", MENOS, C.gold);
+
+  // 4) Inventario: stock actual vs mínimo (barras agrupadas)
+  if (INV.length) {
+    new Chart("chartInv", {
+      type: "bar",
+      data: {
+        labels: INV.map(i => i.ingrediente),
+        datasets: [
+          { label: "Stock actual", data: INV.map(i => i.stock_actual), backgroundColor: C.green, borderRadius: 4 },
+          { label: "Stock mínimo", data: INV.map(i => i.stock_minimo), backgroundColor: C.gold, borderRadius: 4 },
+        ],
+      },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: "top" } },
+        scales: { x: { ticks: { maxRotation: 60, minRotation: 45, font: { size: 10 } } }, y: { beginAtZero: true } } },
+    });
+  } else { vacio("chartInv"); }
+</script>
 {% endblock %}

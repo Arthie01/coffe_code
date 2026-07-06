@@ -12,6 +12,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useOrders } from '../context/OrderContext';
 import colors from '../theme/colors';
 import fonts from '../theme/fonts';
@@ -101,7 +102,7 @@ export default function TargetasScreen() {
                 {tieneDescuento ? (
                   <View style={styles.descuentoBadge}>
                     <Text style={styles.descuentoBadgeText}>
-                      🏷 {pedido.descuentoCodigo} · -{(pedido.descuentoPorcentaje * 100).toFixed(0)}%
+                      <Ionicons name="pricetag-outline" size={11} color={colors.primaryDark} /> {pedido.descuentoCodigo} · -{(pedido.descuentoPorcentaje * 100).toFixed(0)}%
                     </Text>
                     <Pressable onPress={() => quitarDescuento(pedido.id)}>
                       <Text style={styles.quitarText}>Quitar</Text>

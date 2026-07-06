@@ -1,42 +1,44 @@
 /* ============================================================
-   theme.css — Paleta de Coffee Code (PLACEHOLDER)
+   theme.css — Paleta de Coffee Code
+   Copiada de la app móvil (theme/colors.js + Space Grotesk).
    Para re-tematizar todo el frontend, cambia solo estos hex.
    ============================================================ */
 :root {
-  /* Marca / café */
-  --cc-espresso:   #3E2723;  /* oscuro: paneles, header */
-  --cc-cafe:       #6F4E37;  /* primario: marca, títulos */
-  --cc-caramelo:   #C8A165;  /* acento: botones, resaltados */
-  --cc-latte:      #D4A373;  /* hover, detalles */
-  --cc-crema:      #F5F0EB;  /* fondos suaves */
+  /* Marca / verde (de theme/colors.js) */
+  --cc-espresso:   #00563A;  /* primaryDark: header / paneles oscuros */
+  --cc-cafe:       #00704A;  /* primary: marca, títulos, botones */
+  --cc-caramelo:   #E0A800;  /* warning: acento dorado (resaltados) */
+  --cc-latte:      #00563A;  /* hover oscuro */
+  --cc-crema:      #F5F7EE;  /* backgroundLight: rellenos suaves */
+  --cc-bg:         #E3E7D3;  /* background: fondo de página (salvia) */
   --cc-blanco:     #FFFFFF;
-  --cc-texto:      #2A1E17;  /* texto principal */
-  --cc-muted:      #8A7A6D;  /* texto secundario */
-  --cc-borde:      #E4DAD0;
+  --cc-texto:      #14231C;  /* texto principal (casi negro verdoso) */
+  --cc-muted:      #6B6B6B;  /* textSecondary */
+  --cc-borde:      #B7B6C2;  /* border */
 
   /* Estados */
-  --cc-ok:         #5C8A5A;  /* activo / positivo */
-  --cc-ok-bg:      #E7F0E6;
-  --cc-warn:       #B8862B;
-  --cc-warn-bg:    #F7EED9;
-  --cc-danger:     #B03A2E;  /* inactivo / eliminar */
-  --cc-danger-bg:  #F6E4E1;
+  --cc-ok:         #00704A;  /* activo / positivo (verde) */
+  --cc-ok-bg:      #E3E7D3;
+  --cc-warn:       #E0A800;  /* warning */
+  --cc-warn-bg:    #FBF3D6;
+  --cc-danger:     #C0392B;  /* inactivo / eliminar */
+  --cc-danger-bg:  #F7E4E1;
 
-  /* Tipografía */
-  --cc-font-display: 'Oswald', sans-serif;
-  --cc-font-body:    'DM Sans', sans-serif;
+  /* Tipografía — Space Grotesk (de theme/fonts.js) */
+  --cc-font-display: 'Space Grotesk', sans-serif;
+  --cc-font-body:    'Space Grotesk', sans-serif;
 
   /* UI */
-  --cc-radius:     10px;
-  --cc-shadow:     0 6px 24px rgba(62, 39, 35, 0.10);
-  --cc-shadow-sm:  0 2px 8px rgba(62, 39, 35, 0.08);
+  --cc-radius:     12px;
+  --cc-shadow:     0 6px 24px rgba(0, 86, 58, 0.10);
+  --cc-shadow-sm:  0 2px 8px rgba(0, 86, 58, 0.08);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; -webkit-font-smoothing: antialiased; }
 body {
   font-family: var(--cc-font-body);
-  background: var(--cc-crema);
+  background: var(--cc-bg);
   color: var(--cc-texto);
   min-height: 100dvh;
 }

@@ -5,6 +5,7 @@ Consume la API central (FastAPI) usando JWT guardado en la sesión de Flask.
 """
 import os
 from functools import wraps
+from datetime import date, timedelta
 
 import requests
 from flask import (
@@ -182,7 +183,11 @@ def usuario_editar(id):
             "apellido_m": request.form.get("apellido_m", "").strip() or None,
             "id_rol": int(request.form.get("id_rol")),
             "id_estatus": int(request.form.get("id_estatus")),
+            "correo": request.form.get("correo", "").strip(),
         }
+        nueva_password = request.form.get("password", "").strip()
+        if nueva_password:
+            payload["password"] = nueva_password
         try:
             r = requests.patch(f"{API_URL}/v1/usuarios/{id}", json=payload,
                                headers=api_headers(), timeout=15)
@@ -227,6 +232,7 @@ REPORTES = {
     "productos-menos": "/v1/reportes/productos-vendidos?orden=menos&limite=5",
     "pedidos": "/v1/reportes/pedidos",
     "inventario": "/v1/reportes/inventario",
+    "general": "/v1/reportes/general",
 }
 
 
@@ -249,10 +255,22 @@ def reportes():
         except requests.RequestException:
             return {}
 
+    # Rangos rápidos (chips de filtro)
+    hoy = date.today()
+    presets = [
+        {"key": "hoy",  "label": "Hoy",     "desde": hoy.isoformat(),                        "hasta": hoy.isoformat()},
+        {"key": "7d",   "label": "7 días",  "desde": (hoy - timedelta(days=6)).isoformat(),  "hasta": hoy.isoformat()},
+        {"key": "30d",  "label": "30 días", "desde": (hoy - timedelta(days=29)).isoformat(), "hasta": hoy.isoformat()},
+        {"key": "todo", "label": "Todo",    "desde": "",                                     "hasta": ""},
+    ]
+    preset_activo = next((p["key"] for p in presets if p["desde"] == desde and p["hasta"] == hasta), None)
+
     return render_template(
         "reportes.html",
         desde=desde,
         hasta=hasta,
+        presets=presets,
+        preset_activo=preset_activo,
         ganancias=fetch(REPORTES["ganancias"]),
         mas_vendidos=fetch(REPORTES["productos-mas"]),
         menos_vendidos=fetch(REPORTES["productos-menos"]),

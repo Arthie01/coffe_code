@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, SafeAreaView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useOrders } from '../context/OrderContext';
 import colors from '../theme/colors';
 import fonts from '../theme/fonts';
@@ -62,7 +63,9 @@ export default function PresseableScreen({ navigation }) {
           style={[styles.paraLlevarBtn, seleccionId === 'llevar' && styles.mesaSeleccionada]}
           onPress={paraLlevar}
         >
-          <Text style={styles.paraLlevarText}>📦  Para Llevar</Text>
+          <Text style={styles.paraLlevarText}>
+            <Ionicons name="bag-handle-outline" size={15} color={colors.text} />  Para Llevar
+          </Text>
         </Pressable>
 
         <Pressable

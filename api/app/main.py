@@ -138,13 +138,10 @@ def seed_db():
 
         # ── 8. Usuarios ───────────────────────────────────────
         usuarios_data = [
-            ("Artemio",  "Hurtado",  "Reyes",    1, 1, "admin@coffee.mx",     "admin123"),
-            ("María",    "López",    "García",   2, 1, "maria@coffee.mx",     "mesero123"),
-            ("Roberto",  "Sánchez",  "Díaz",     3, 1, "roberto@coffee.mx",   "cocinero123"),
-            ("Ana",      "Torres",   "Ruiz",     4, 1, "ana@coffee.mx",       "cajero123"),
-            ("Carlos",   "Mendoza",  "Flores",   2, 1, "carlos@coffee.mx",    "mesero123"),
-            ("Patricia", "Navarro",  "Ríos",     3, 1, "patricia@coffee.mx",  "cocinero123"),
-            ("Daniel",   "Soto",     None,       2, 2, "daniel@coffee.mx",    "mesero123"),
+            ("Artemio", "Hurtado", "Hernández", 1, 1, "admin@coffee.mx",   "admin123"),
+            ("Jorge",   "López",   None,        4, 1, "jorge@coffee.mx",   "cajero123"),
+            ("Alberto", "Muñiz",   None,        3, 1, "alberto@coffee.mx", "cocinero123"),
+            ("Tania",   "Mejía",   None,        2, 1, "tania@coffee.mx",   "mesero123"),
         ]
 
         for nombre, ap, am, rol, est, correo, pwd in usuarios_data:
@@ -244,21 +241,21 @@ def seed_db():
         ])
         db.flush()
 
-        # Asignaciones
+        # Asignaciones — Tania (mesero, id 4) y Alberto (cocinero, id 3)
         db.add_all([
-            MeseroPedido(id_usuario=2, id_pedido=1),
-            MeseroPedido(id_usuario=5, id_pedido=2),
-            MeseroPedido(id_usuario=2, id_pedido=3),
-            MeseroPedido(id_usuario=5, id_pedido=4),
+            MeseroPedido(id_usuario=4, id_pedido=1),
+            MeseroPedido(id_usuario=4, id_pedido=2),
+            MeseroPedido(id_usuario=4, id_pedido=3),
+            MeseroPedido(id_usuario=4, id_pedido=4),
             CocineroPedido(id_usuario=3, id_pedido=1),
-            CocineroPedido(id_usuario=6, id_pedido=2),
+            CocineroPedido(id_usuario=3, id_pedido=2),
             CocineroPedido(id_usuario=3, id_pedido=3),
         ])
         db.flush()
 
-        # Pago del pedido 1 (ya entregado)
+        # Pago del pedido 1 (ya entregado) — cobra Jorge (cajero, id 2)
         db.add(Pago(
-            id_pedido=1, id_metodo_pago=1, id_usuario=4,
+            id_pedido=1, id_metodo_pago=1, id_usuario=2,
             monto_total=175.00, monto_recibido=200.00, cambio=25.00
         ))
 
@@ -274,20 +271,20 @@ def seed_db():
         # ── 13. Asignaciones de turno de ejemplo ─────────────────
         # estatus: 11=Programado, 12=En turno, 13=Finalizado
         db.add_all([
-            # María (mesera) — turno matutino ya finalizado (entrada y salida)
+            # Tania (mesero) — turno matutino ya finalizado (entrada y salida)
             AsignacionTurno(
-                id_usuario=2, id_turno=1, id_estatus=13, fecha=date(2026, 6, 28),
+                id_usuario=4, id_turno=1, id_estatus=13, fecha=date(2026, 6, 28),
                 hora_entrada=datetime(2026, 6, 28, 6, 58),
                 hora_salida=datetime(2026, 6, 28, 15, 3)
             ),
-            # Roberto (cocinero) — matutino, actualmente en turno (solo entrada)
+            # Alberto (cocinero) — matutino, actualmente en turno (solo entrada)
             AsignacionTurno(
                 id_usuario=3, id_turno=1, id_estatus=12, fecha=date(2026, 6, 28),
                 hora_entrada=datetime(2026, 6, 28, 7, 1)
             ),
-            # Carlos (mesero) — vespertino programado (aún sin checar)
+            # Jorge (cajero) — vespertino programado (aún sin checar)
             AsignacionTurno(
-                id_usuario=5, id_turno=2, id_estatus=11, fecha=date(2026, 6, 28)
+                id_usuario=2, id_turno=2, id_estatus=11, fecha=date(2026, 6, 28)
             ),
         ])
         db.flush()

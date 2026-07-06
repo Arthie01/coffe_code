@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
+import { Ionicons } from '@expo/vector-icons';
 import { useOrders } from '../context/OrderContext';
 import colors from '../theme/colors';
 import fonts from '../theme/fonts';
@@ -24,7 +25,7 @@ export default function CustomDrawerContent(props) {
     <View style={styles.container}>
       <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0 }} style={{ backgroundColor: colors.primary }}>
         <View style={styles.header}>
-          <Text style={styles.logo}>☕</Text>
+          <Ionicons name="cafe" size={38} color={colors.white} />
           <Text style={styles.title}>CAFÉ APP</Text>
           <Text style={styles.subtitle}>{activos} pedido(s) activos</Text>
         </View>

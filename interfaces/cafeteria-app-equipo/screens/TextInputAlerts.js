@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import colors from '../theme/colors';
 import fonts from '../theme/fonts';
 
@@ -36,7 +37,7 @@ export default function TextInputAlerts({ navigation }) {
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <View style={styles.container}>
-          <Text style={styles.logo}>☕</Text>
+          <Ionicons name="cafe" size={50} color={colors.primary} style={styles.logo} />
           <Text style={styles.title}>BIENVENIDO</Text>
           <Text style={styles.subtitle}>Inicia sesión para tomar pedidos</Text>
 
@@ -77,7 +78,7 @@ export default function TextInputAlerts({ navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.white },
   container: { flex: 1, justifyContent: 'center', padding: 30 },
-  logo: { fontSize: 50, textAlign: 'center', marginBottom: 10 },
+  logo: { alignSelf: 'center', marginBottom: 10 },
   title: {
     fontSize: 24,
     fontFamily: fonts.bold,

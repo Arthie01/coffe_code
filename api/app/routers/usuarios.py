@@ -122,8 +122,31 @@ async def actualizar(id: int, data: ActualizarUsuario, db: Session = Depends(get
         raise HTTPException(status_code=404, detail=f"Usuario con id {id} no encontrado")
 
     campos = data.model_dump(exclude_unset=True)
+    nuevo_correo = campos.pop("correo", None)
+    nueva_password = campos.pop("password", None)
+
+    # Campos de la tabla usuarios
     for campo, valor in campos.items():
         setattr(usuario, campo, valor)
+
+    # Correo y contraseña viven en credenciales_usuario (otra tabla)
+    if nuevo_correo or nueva_password:
+        cred = db.query(CredencialUsuario).filter(CredencialUsuario.id_usuario == id).first()
+        if not cred:
+            raise HTTPException(status_code=404, detail="El usuario no tiene credenciales registradas")
+
+        if nuevo_correo and nuevo_correo != cred.correo:
+            existe = db.query(CredencialUsuario).filter(
+                CredencialUsuario.correo == nuevo_correo,
+                CredencialUsuario.id_usuario != id
+            ).first()
+            if existe:
+                raise HTTPException(status_code=400, detail="El correo ya está registrado por otro usuario")
+            cred.correo = nuevo_correo
+
+        if nueva_password:
+            hashed = bcrypt.hashpw(nueva_password.encode("utf-8"), bcrypt.gensalt())
+            cred.password_hash = hashed.decode("utf-8")
 
     db.commit()
     db.refresh(usuario)

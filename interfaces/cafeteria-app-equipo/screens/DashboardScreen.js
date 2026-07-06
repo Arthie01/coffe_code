@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, SafeAreaView, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useOrders } from '../context/OrderContext';
 import colors from '../theme/colors';
 import fonts from '../theme/fonts';
@@ -17,7 +18,10 @@ export default function DashboardScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={{ padding: 20 }}>
-        <Text style={styles.title}>BIENVENIDO ☕</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>BIENVENIDO</Text>
+          <Ionicons name="cafe" size={22} color={colors.text} />
+        </View>
         <Text style={styles.subtitle}>Resumen del día</Text>
 
         <View style={styles.statRow}>
@@ -67,7 +71,9 @@ export default function DashboardScreen({ navigation }) {
           <Text style={styles.cardDesc}>Cobrar pedidos listos y ver ingresos</Text>
         </Pressable>
 
-        <Text style={styles.hint}>☰ Desliza desde el borde izquierdo o toca el ícono de menú para navegar.</Text>
+        <Text style={styles.hint}>
+          <Ionicons name="menu" size={12} color={colors.textSecondary} /> Desliza desde el borde izquierdo o toca el ícono de menú para navegar.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -75,6 +81,7 @@ export default function DashboardScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { fontSize: 24, fontFamily: fonts.bold, textTransform: 'uppercase', letterSpacing: 1, color: colors.text },
   subtitle: { fontSize: 13, color: colors.textSecondary, marginBottom: 20, marginTop: 4 },
   statRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
