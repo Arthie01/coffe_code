@@ -6,15 +6,20 @@ from app.data.db import get_db
 from app.data.mesa import Mesa
 from app.data.estatus import Estatus
 from app.models.mesas import CrearMesa, ActualizarMesa
-from app.security.oauth2 import verificar_token
+from app.security.oauth2 import requiere_rol
 
 router = APIRouter(
     prefix="/v1/mesas",
     tags=["Mesas"]
 )
 
+# Roles por operación: lectura amplia, escritura del dueño del módulo
+leer = requiere_rol("Admin", "Mesero")
+solo_admin = requiere_rol("Admin")
+editar = requiere_rol("Admin", "Mesero")
 
-@router.get("/", status_code=status.HTTP_200_OK)
+
+@router.get("/", status_code=status.HTTP_200_OK, dependencies=[Depends(leer)])
 async def consultar_todas(id_estatus: Optional[int] = None, db: Session = Depends(get_db)):
     query = db.query(Mesa)
     if id_estatus:
@@ -35,7 +40,7 @@ async def consultar_todas(id_estatus: Optional[int] = None, db: Session = Depend
     return {"status": "200", "total": len(result), "data": result}
 
 
-@router.get("/{id}", status_code=status.HTTP_200_OK)
+@router.get("/{id}", status_code=status.HTTP_200_OK, dependencies=[Depends(leer)])
 async def consultar_una(id: int, db: Session = Depends(get_db)):
     mesa = db.query(Mesa).filter(Mesa.id == id).first()
     if not mesa:
@@ -53,7 +58,7 @@ async def consultar_una(id: int, db: Session = Depends(get_db)):
     }
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, dependencies=[Depends(solo_admin)])
 async def crear(data: CrearMesa, db: Session = Depends(get_db)):
     nueva = Mesa(
         nombre=data.nombre,
@@ -66,7 +71,7 @@ async def crear(data: CrearMesa, db: Session = Depends(get_db)):
     return {"status": "201", "mensaje": "Mesa creada", "data": nueva}
 
 
-@router.patch("/{id}", status_code=status.HTTP_200_OK)
+@router.patch("/{id}", status_code=status.HTTP_200_OK, dependencies=[Depends(editar)])
 async def actualizar(id: int, data: ActualizarMesa, db: Session = Depends(get_db)):
     mesa = db.query(Mesa).filter(Mesa.id == id).first()
     if not mesa:
@@ -82,7 +87,7 @@ async def actualizar(id: int, data: ActualizarMesa, db: Session = Depends(get_db
 
 
 @router.delete("/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_token)])
+               dependencies=[Depends(solo_admin)])
 async def eliminar(id: int, db: Session = Depends(get_db)):
     mesa = db.query(Mesa).filter(Mesa.id == id).first()
     if not mesa:

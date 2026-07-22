@@ -4,11 +4,12 @@ from sqlalchemy.orm import Session
 from app.data.db import get_db
 from app.data.turno import Turno
 from app.models.turnos import CrearTurno, ActualizarTurno
-from app.security.oauth2 import verificar_token
+from app.security.oauth2 import verificar_token, requiere_rol
 
 router = APIRouter(
     prefix="/v1/turnos",
-    tags=["Turnos"]
+    tags=["Turnos"],
+    dependencies=[Depends(requiere_rol("Admin"))]
 )
 
 

@@ -31,7 +31,7 @@ export default function TargetasScreen() {
     return () => clearTimeout(timer);
   }, []);
 
-  const listos = pedidos.filter((p) => p.estado === 'Listo');
+  const listos = pedidos.filter((p) => p.estado === 'Listo' || p.estado === 'Entregado');
   const pagados = pedidos.filter((p) => p.estado === 'Pagado');
   const ingresos = pagados.reduce((sum, p) => sum + p.total, 0);
 

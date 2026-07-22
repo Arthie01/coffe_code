@@ -20,7 +20,8 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "coffee-code-frontend-dev-secret"
 API_URL = os.getenv("API_URL", "http://localhost:8000").rstrip("/")
 
 # Solo estos roles pueden entrar al panel de gestión general.
-ROLES_PANEL = {"Admin", "Cajero"}
+# El dashboard web es exclusivo del Administrador.
+ROLES_PANEL = {"Admin"}
 
 
 # ══════════════════════════════════════════════
@@ -43,6 +44,26 @@ def login_required(f):
             return redirect(url_for("login"))
         return f(*args, **kwargs)
     return wrapper
+
+
+def admin_required(f):
+    """Solo Admin. El Cajero se redirige a Estadísticas."""
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if not session.get("access_token"):
+            flash("Inicia sesión para continuar.", "warning")
+            return redirect(url_for("login"))
+        if session.get("usuario", {}).get("rol") != "Admin":
+            flash("Acceso solo para Administradores.", "error")
+            return redirect(url_for("reportes"))
+        return f(*args, **kwargs)
+    return wrapper
+
+
+def _destino_inicial():
+    """A dónde mandar tras el login según el rol."""
+    rol = session.get("usuario", {}).get("rol")
+    return "usuarios" if rol == "Admin" else "reportes"
 
 
 def cargar_roles():
@@ -68,7 +89,9 @@ def cargar_estatus_usuario():
 # ══════════════════════════════════════════════
 @app.route("/")
 def index():
-    return redirect(url_for("usuarios") if session.get("access_token") else url_for("login"))
+    if session.get("access_token"):
+        return redirect(url_for(_destino_inicial()))
+    return redirect(url_for("login"))
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -94,16 +117,16 @@ def login():
         body = r.json()
         usuario = body.get("data", {})
         if usuario.get("rol") not in ROLES_PANEL:
-            flash("Acceso restringido: solo Admin o Cajero pueden entrar al panel.", "error")
+            flash("Acceso restringido: solo el Administrador puede entrar al panel.", "error")
             return render_template("login.html")
 
         session["access_token"] = body.get("access_token")
         session["usuario"] = usuario
         flash(f"Bienvenido, {usuario.get('nombre', '')}.", "success")
-        return redirect(url_for("usuarios"))
+        return redirect(url_for(_destino_inicial()))
 
     if session.get("access_token"):
-        return redirect(url_for("usuarios"))
+        return redirect(url_for(_destino_inicial()))
     return render_template("login.html")
 
 
@@ -118,7 +141,7 @@ def logout():
 # Módulo: Usuarios y roles
 # ══════════════════════════════════════════════
 @app.route("/usuarios")
-@login_required
+@admin_required
 def usuarios():
     r = api_get("/v1/usuarios")
     lista = r.json().get("data", []) if r.ok else []
@@ -136,7 +159,7 @@ def usuarios():
 
 
 @app.route("/usuarios/nuevo", methods=["GET", "POST"])
-@login_required
+@admin_required
 def usuario_nuevo():
     roles = cargar_roles()
     estatus = cargar_estatus_usuario()
@@ -171,7 +194,7 @@ def usuario_nuevo():
 
 
 @app.route("/usuarios/<int:id>/editar", methods=["GET", "POST"])
-@login_required
+@admin_required
 def usuario_editar(id):
     roles = cargar_roles()
     estatus = cargar_estatus_usuario()
@@ -210,7 +233,7 @@ def usuario_editar(id):
 
 
 @app.route("/usuarios/<int:id>/eliminar", methods=["POST"])
-@login_required
+@admin_required
 def usuario_eliminar(id):
     try:
         r = requests.delete(f"{API_URL}/v1/usuarios/{id}", headers=api_headers(), timeout=15)
@@ -290,8 +313,8 @@ def descargar_reporte(reporte, formato):
     sep = "&" if "?" in path else "?"
     url = f"{API_URL}{path}{sep}formato={formato}"
 
-    # Propagar rango de fechas si viene
-    for k in ("desde", "hasta"):
+    # Propagar rango de fechas y selección de reportes si vienen
+    for k in ("desde", "hasta", "reportes"):
         v = request.args.get(k)
         if v:
             url += f"&{k}={v}"

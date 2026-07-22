@@ -11,15 +11,32 @@ from app.data.estatus import Estatus
 from app.data.cocinero_pedido import CocineroPedido
 from app.data.mesero_pedido import MeseroPedido
 from app.data.usuario import Usuario
+from app.data.rol import Rol
 from app.models.pedidos import CrearPedido, CambiarEstadoPedido, AsignarCocinero, AsignarMesero
+from app.security.oauth2 import requiere_rol
 
 router = APIRouter(
     prefix="/v1/pedidos",
     tags=["Pedidos"]
 )
 
+# Roles por operación: lectura amplia, escritura del dueño del módulo
+leer = requiere_rol("Admin", "Mesero", "Cocinero", "Cajero")
+crear_pedido = requiere_rol("Admin", "Mesero")
+gestionar = requiere_rol("Admin", "Mesero", "Cocinero")
+# Cambiar estado lo pueden intentar los 4 roles; la transición válida depende del rol.
+puede_cambiar_estado = requiere_rol("Admin", "Mesero", "Cocinero", "Cajero")
 
-@router.get("/", status_code=status.HTTP_200_OK)
+# Flujo del pedido: Pendiente -> En preparación (Mesero) -> Listo (Cocinero) -> Entregado (Cajero)
+TRANSICIONES_ROL = {
+    "Mesero":   {"En preparación"},            # solo mandar a cocina
+    "Cocinero": {"Listo"},                     # marcar listo -> pasa a caja
+    "Cajero":   {"Entregado", "Cancelado"},    # cerrar / cancelar en caja
+}
+ESTADOS_CERRADOS = {"Entregado", "Cancelado"}
+
+
+@router.get("/", status_code=status.HTTP_200_OK, dependencies=[Depends(leer)])
 async def consultar_todos(
     id_estatus: Optional[int] = None,
     id_mesa: Optional[int] = None,
@@ -53,7 +70,7 @@ async def consultar_todos(
     return {"status": "200", "total": len(result), "data": result}
 
 
-@router.get("/{id}", status_code=status.HTTP_200_OK)
+@router.get("/{id}", status_code=status.HTTP_200_OK, dependencies=[Depends(leer)])
 async def consultar_uno(id: int, db: Session = Depends(get_db)):
     pedido = db.query(Pedido).filter(Pedido.id == id).first()
     if not pedido:
@@ -115,12 +132,16 @@ async def consultar_uno(id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def crear(data: CrearPedido, db: Session = Depends(get_db)):
+async def crear(
+    data: CrearPedido,
+    usuario: Usuario = Depends(crear_pedido),
+    db: Session = Depends(get_db)
+):
     mesa = db.query(Mesa).filter(Mesa.id == data.id_mesa).first()
     if not mesa:
         raise HTTPException(status_code=404, detail="Mesa no encontrada")
 
-    # Estatus 1 = Activo (Pendiente para pedido)
+    # El pedido nace en estatus "Pendiente" (id 3)
     precio_total = 0.0
     comidas_map = {}
     for item in data.items:
@@ -132,7 +153,7 @@ async def crear(data: CrearPedido, db: Session = Depends(get_db)):
 
     nuevo = Pedido(
         id_mesa=data.id_mesa,
-        id_estatus=1,
+        id_estatus=3,
         precio_total=round(precio_total, 2),
         notas=data.notas
     )
@@ -147,9 +168,12 @@ async def crear(data: CrearPedido, db: Session = Depends(get_db)):
             observaciones=item.observaciones
         ))
 
-    if data.id_mesero:
+    # Si lo levanta un Mesero, se auto-asigna él mismo; si es Admin, usa id_mesero del body
+    rol = db.query(Rol).filter(Rol.id == usuario.id_rol).first()
+    id_mesero = usuario.id if (rol and rol.nombre == "Mesero") else data.id_mesero
+    if id_mesero:
         db.add(MeseroPedido(
-            id_usuario=data.id_mesero,
+            id_usuario=id_mesero,
             id_pedido=nuevo.id
         ))
 
@@ -167,14 +191,37 @@ async def crear(data: CrearPedido, db: Session = Depends(get_db)):
 
 
 @router.patch("/{id}/estado", status_code=status.HTTP_200_OK)
-async def cambiar_estado(id: int, data: CambiarEstadoPedido, db: Session = Depends(get_db)):
+async def cambiar_estado(
+    id: int,
+    data: CambiarEstadoPedido,
+    usuario: Usuario = Depends(puede_cambiar_estado),
+    db: Session = Depends(get_db)
+):
     pedido = db.query(Pedido).filter(Pedido.id == id).first()
     if not pedido:
         raise HTTPException(status_code=404, detail=f"Pedido con id {id} no encontrado")
 
-    estatus = db.query(Estatus).filter(Estatus.id == data.id_estatus).first()
-    if not estatus:
+    destino = db.query(Estatus).filter(Estatus.id == data.id_estatus).first()
+    if not destino:
         raise HTTPException(status_code=404, detail=f"Estatus con id {data.id_estatus} no encontrado")
+
+    rol = db.query(Rol).filter(Rol.id == usuario.id_rol).first()
+    rol_nombre = rol.nombre if rol else ""
+
+    # El Admin puede cualquier cambio; los demás siguen el flujo del pedido
+    if rol_nombre != "Admin":
+        actual = db.query(Estatus).filter(Estatus.id == pedido.id_estatus).first()
+        if actual and actual.nombre in ESTADOS_CERRADOS:
+            raise HTTPException(
+                status_code=403,
+                detail="El pedido ya está cerrado y no se puede modificar"
+            )
+        permitidos = TRANSICIONES_ROL.get(rol_nombre, set())
+        if destino.nombre not in permitidos:
+            raise HTTPException(
+                status_code=403,
+                detail=f"El rol {rol_nombre} no puede cambiar el pedido a '{destino.nombre}'"
+            )
 
     pedido.id_estatus = data.id_estatus
     db.commit()
@@ -182,7 +229,7 @@ async def cambiar_estado(id: int, data: CambiarEstadoPedido, db: Session = Depen
     return {"status": "200", "mensaje": "Estado del pedido actualizado", "data": pedido}
 
 
-@router.post("/{id}/cocinero", status_code=status.HTTP_201_CREATED)
+@router.post("/{id}/cocinero", status_code=status.HTTP_201_CREATED, dependencies=[Depends(gestionar)])
 async def asignar_cocinero(id: int, data: AsignarCocinero, db: Session = Depends(get_db)):
     pedido = db.query(Pedido).filter(Pedido.id == id).first()
     if not pedido:
@@ -199,7 +246,8 @@ async def asignar_cocinero(id: int, data: AsignarCocinero, db: Session = Depends
     return {"status": "201", "mensaje": "Cocinero asignado al pedido", "data": asignacion}
 
 
-@router.post("/{id}/mesero", status_code=status.HTTP_201_CREATED)
+@router.post("/{id}/mesero", status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(requiere_rol("Admin", "Mesero"))])
 async def asignar_mesero(id: int, data: AsignarMesero, db: Session = Depends(get_db)):
     pedido = db.query(Pedido).filter(Pedido.id == id).first()
     if not pedido:
@@ -208,6 +256,11 @@ async def asignar_mesero(id: int, data: AsignarMesero, db: Session = Depends(get
     usuario = db.query(Usuario).filter(Usuario.id == data.id_usuario).first()
     if not usuario:
         raise HTTPException(status_code=404, detail=f"Usuario con id {data.id_usuario} no encontrado")
+
+    # El usuario asignado debe tener rol de Mesero
+    rol = db.query(Rol).filter(Rol.id == usuario.id_rol).first()
+    if not rol or rol.nombre != "Mesero":
+        raise HTTPException(status_code=400, detail="Solo los meseros se pueden asignar a un pedido")
 
     asignacion = MeseroPedido(id_usuario=data.id_usuario, id_pedido=id)
     db.add(asignacion)

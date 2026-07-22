@@ -189,6 +189,23 @@
 .dl-todo__label { font-family: var(--cc-font-display); font-size: 13px; font-weight: 600; color: var(--cc-muted); text-transform: uppercase; letter-spacing: .04em; }
 .dl-todo__label i { color: var(--cc-cafe); }
 
+/* ── Selector de reportes (mostrar/ocultar) ─ */
+.rep-toggle-bar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: #fff; border: 1px solid var(--cc-borde); border-radius: var(--cc-radius);
+  padding: 12px 18px; margin-bottom: 24px; box-shadow: var(--cc-shadow-sm);
+}
+.rep-toggle-label { font-family: var(--cc-font-display); font-size: 13px; font-weight: 600; color: var(--cc-muted); text-transform: uppercase; letter-spacing: .04em; display: inline-flex; align-items: center; gap: 6px; }
+.rep-toggle-label i { color: var(--cc-cafe); }
+.rep-toggle {
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+  padding: 6px 14px; border-radius: 30px; border: 1.5px solid var(--cc-borde);
+  font-size: 13px; font-weight: 500; color: var(--cc-texto); user-select: none; transition: all .15s;
+}
+.rep-toggle:hover { border-color: var(--cc-cafe); }
+.rep-toggle input { accent-color: var(--cc-cafe); cursor: pointer; }
+.rep-toggle:has(input:checked) { background: var(--cc-crema); border-color: var(--cc-cafe); color: var(--cc-cafe); }
+
 /* ── Grid de gráficas ────────────────── */
 .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .report-block--wide { grid-column: 1 / -1; }

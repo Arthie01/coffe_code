@@ -12,17 +12,22 @@ from app.data.ingrediente import Ingrediente
 from app.data.categoria_comida import CategoriaComida
 from app.data.estatus import Estatus
 from app.models.comidas import CrearComida, ActualizarComida
-from app.security.oauth2 import verificar_token
+from app.security.oauth2 import requiere_rol
 
 router = APIRouter(
     prefix="/v1/comidas",
     tags=["Comidas"]
 )
 
+# Roles por operación: lectura amplia, escritura del dueño del módulo
+# El Cajero también ve el menú (para cobrar / referencia de precios).
+leer = requiere_rol("Admin", "Cocinero", "Mesero", "Cajero")
+escribir = requiere_rol("Admin", "Cocinero")
+
 UPLOAD_DIR = "/app/uploads/comidas"
 
 
-@router.get("/", status_code=status.HTTP_200_OK)
+@router.get("/", status_code=status.HTTP_200_OK, dependencies=[Depends(leer)])
 async def consultar_todas(
     id_categoria: Optional[int] = None,
     id_estatus: Optional[int] = None,
@@ -54,7 +59,7 @@ async def consultar_todas(
     return {"status": "200", "total": len(result), "data": result}
 
 
-@router.get("/{id}", status_code=status.HTTP_200_OK)
+@router.get("/{id}", status_code=status.HTTP_200_OK, dependencies=[Depends(leer)])
 async def consultar_una(id: int, db: Session = Depends(get_db)):
     comida = db.query(Comida).filter(Comida.id == id).first()
     if not comida:
@@ -94,7 +99,7 @@ async def consultar_una(id: int, db: Session = Depends(get_db)):
     }
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, dependencies=[Depends(escribir)])
 async def crear(data: CrearComida, db: Session = Depends(get_db)):
     nueva = Comida(
         nombre=data.nombre,
@@ -120,7 +125,7 @@ async def crear(data: CrearComida, db: Session = Depends(get_db)):
     return {"status": "201", "mensaje": "Comida creada", "data": nueva}
 
 
-@router.post("/{id}/imagen", status_code=status.HTTP_200_OK)
+@router.post("/{id}/imagen", status_code=status.HTTP_200_OK, dependencies=[Depends(escribir)])
 async def subir_imagen(id: int, imagen: UploadFile = File(...), db: Session = Depends(get_db)):
     comida = db.query(Comida).filter(Comida.id == id).first()
     if not comida:
@@ -138,7 +143,7 @@ async def subir_imagen(id: int, imagen: UploadFile = File(...), db: Session = De
     return {"status": "200", "mensaje": "Imagen subida", "img": comida.img}
 
 
-@router.patch("/{id}", status_code=status.HTTP_200_OK)
+@router.patch("/{id}", status_code=status.HTTP_200_OK, dependencies=[Depends(escribir)])
 async def actualizar(id: int, data: ActualizarComida, db: Session = Depends(get_db)):
     comida = db.query(Comida).filter(Comida.id == id).first()
     if not comida:
@@ -164,7 +169,7 @@ async def actualizar(id: int, data: ActualizarComida, db: Session = Depends(get_
 
 
 @router.delete("/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_token)])
+               dependencies=[Depends(escribir)])
 async def eliminar(id: int, db: Session = Depends(get_db)):
     comida = db.query(Comida).filter(Comida.id == id).first()
     if not comida:

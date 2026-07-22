@@ -9,11 +9,12 @@ from app.data.turno import Turno
 from app.data.usuario import Usuario
 from app.data.estatus import Estatus
 from app.models.turnos import CrearAsignacionTurno, ActualizarAsignacionTurno
-from app.security.oauth2 import verificar_token
+from app.security.oauth2 import verificar_token, requiere_rol
 
 router = APIRouter(
     prefix="/v1/asignaciones-turno",
-    tags=["Asignaciones de turno"]
+    tags=["Asignaciones de turno"],
+    dependencies=[Depends(requiere_rol("Admin"))]
 )
 
 

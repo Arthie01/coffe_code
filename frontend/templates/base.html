@@ -38,10 +38,12 @@
               <span class="logo-sub">Panel de<br />Gestión</span>
             </a>
             <nav class="hdr-nav">
+              {% if session['usuario']['rol'] == 'Admin' %}
               <a href="{{ url_for('usuarios') }}"
                  class="hdr-nav__link {% if active == 'usuarios' %}hdr-nav__link--active{% endif %}">
                 <i class="fas fa-users"></i> Usuarios
               </a>
+              {% endif %}
               <a href="{{ url_for('reportes') }}"
                  class="hdr-nav__link {% if active == 'reportes' %}hdr-nav__link--active{% endif %}">
                 <i class="fas fa-chart-line"></i> Estadísticas

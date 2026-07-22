@@ -13,11 +13,11 @@
       <p class="page-subtitle">Ganancias, ventas, pedidos e inventario. Exporta a PDF o XLSX.</p>
     </div>
     <div class="dl-todo">
-      <span class="dl-todo__label"><i class="fas fa-download"></i> Descargar todo</span>
-      <a class="btn-add" href="{{ url_for('descargar_reporte', reporte='general', formato='pdf', desde=desde, hasta=hasta) }}">
+      <span class="dl-todo__label"><i class="fas fa-download"></i> Descargar lo mostrado</span>
+      <a class="btn-add" id="dl-pdf" href="{{ url_for('descargar_reporte', reporte='general', formato='pdf', desde=desde, hasta=hasta) }}">
         <i class="fas fa-file-pdf"></i> PDF
       </a>
-      <a class="btn-export" href="{{ url_for('descargar_reporte', reporte='general', formato='xlsx', desde=desde, hasta=hasta) }}">
+      <a class="btn-export" id="dl-xlsx" href="{{ url_for('descargar_reporte', reporte='general', formato='xlsx', desde=desde, hasta=hasta) }}">
         <i class="fas fa-file-excel"></i> XLSX
       </a>
     </div>
@@ -38,6 +38,16 @@
       <input class="cr-input" type="date" name="hasta" value="{{ hasta }}" />
       <button type="submit" class="btn-primary btn-sm"><i class="fas fa-filter"></i> Aplicar</button>
     </form>
+  </div>
+
+  {# ── Selector: qué reportes mostrar ── #}
+  <div class="rep-toggle-bar">
+    <span class="rep-toggle-label"><i class="fas fa-eye"></i> Mostrar:</span>
+    <label class="rep-toggle"><input type="checkbox" data-target="ganancias" checked> Ingresos vs Egresos</label>
+    <label class="rep-toggle"><input type="checkbox" data-target="pedidos" checked> Pedidos por estatus</label>
+    <label class="rep-toggle"><input type="checkbox" data-target="mas" checked> Más vendidos</label>
+    <label class="rep-toggle"><input type="checkbox" data-target="menos" checked> Menos vendidos</label>
+    <label class="rep-toggle"><input type="checkbox" data-target="inventario" checked> Inventario</label>
   </div>
 
   {# ── KPIs de ganancias ── #}
@@ -66,7 +76,7 @@
 
   {# ── Gráficas ── #}
   <div class="chart-grid">
-    <div class="report-block">
+    <div class="report-block" data-rep="ganancias">
       <div class="report-block__head">
         <span class="report-block__title"><i class="fas fa-scale-balanced"></i> Ingresos vs Egresos</span>
         <div class="report-dl">
@@ -77,7 +87,7 @@
       <div class="chart-box"><canvas id="chartGanancias"></canvas></div>
     </div>
 
-    <div class="report-block">
+    <div class="report-block" data-rep="pedidos">
       <div class="report-block__head">
         <span class="report-block__title"><i class="fas fa-chart-pie"></i> Pedidos por estatus</span>
         <div class="report-dl">
@@ -88,7 +98,7 @@
       <div class="chart-box"><canvas id="chartPedidos"></canvas></div>
     </div>
 
-    <div class="report-block">
+    <div class="report-block" data-rep="mas">
       <div class="report-block__head">
         <span class="report-block__title"><i class="fas fa-fire"></i> Top 5 más vendidos</span>
         <div class="report-dl">
@@ -99,7 +109,7 @@
       <div class="chart-box"><canvas id="chartMas"></canvas></div>
     </div>
 
-    <div class="report-block">
+    <div class="report-block" data-rep="menos">
       <div class="report-block__head">
         <span class="report-block__title"><i class="fas fa-arrow-down-9-1"></i> Top 5 menos vendidos</span>
         <div class="report-dl">
@@ -110,7 +120,7 @@
       <div class="chart-box"><canvas id="chartMenos"></canvas></div>
     </div>
 
-    <div class="report-block report-block--wide">
+    <div class="report-block report-block--wide" data-rep="inventario">
       <div class="report-block__head">
         <span class="report-block__title"><i class="fas fa-boxes-stacked"></i> Inventario: stock actual vs mínimo</span>
         <div class="report-dl">
@@ -218,5 +228,34 @@
         scales: { x: { ticks: { maxRotation: 60, minRotation: 45, font: { size: 10 } } }, y: { beginAtZero: true } } },
     });
   } else { vacio("chartInv"); }
+
+  // ── Filtro: mostrar/ocultar reportes + descarga solo lo seleccionado ──
+  function actualizarDescargas() {
+    const sel = [...document.querySelectorAll(".rep-toggle input:checked")].map((cb) => cb.dataset.target);
+    ["dl-pdf", "dl-xlsx"].forEach((id) => {
+      const a = document.getElementById(id);
+      if (!a) return;
+      const u = new URL(a.href, window.location.origin);
+      if (sel.length && sel.length < 5) u.searchParams.set("reportes", sel.join(","));
+      else u.searchParams.delete("reportes");
+      a.href = u.pathname + u.search;
+    });
+  }
+  function aplicarFiltroReportes() {
+    document.querySelectorAll(".rep-toggle input").forEach((cb) => {
+      const bloque = document.querySelector(`.report-block[data-rep="${cb.dataset.target}"]`);
+      if (bloque) bloque.style.display = cb.checked ? "" : "none";
+    });
+    actualizarDescargas();
+  }
+  document.querySelectorAll(".rep-toggle input").forEach((cb) => {
+    const guardado = localStorage.getItem("rep_" + cb.dataset.target);
+    if (guardado !== null) cb.checked = guardado === "1";
+    cb.addEventListener("change", () => {
+      localStorage.setItem("rep_" + cb.dataset.target, cb.checked ? "1" : "0");
+      aplicarFiltroReportes();
+    });
+  });
+  aplicarFiltroReportes();
 </script>
 {% endblock %}

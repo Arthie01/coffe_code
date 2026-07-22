@@ -2,6 +2,7 @@ import os
 import bcrypt
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.data.db import engine, Base
 from app.data.rol import Rol
@@ -305,6 +306,19 @@ app = FastAPI(
     title="Coffee Code API",
     description="API Central — Sistema de Cafetería Coffee Code",
     version="1.0"
+)
+
+# ── CORS ──────────────────────────────────────────────────────────
+# Permite que la app móvil (Expo) consuma la API desde otro origen.
+# origins=["*"] abre a cualquier origen; allow_credentials=False porque
+# la autenticación viaja por header Authorization (Bearer), no por cookies.
+origins = ["*"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.mount("/uploads", StaticFiles(directory="/app/uploads"), name="uploads")

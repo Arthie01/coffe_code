@@ -13,12 +13,17 @@ from app.data.comida import Comida
 from app.data.ingrediente import Ingrediente
 from app.data.estatus import Estatus
 from app.exportador import a_excel, a_pdf, a_excel_multi, a_pdf_multi
-from app.security.oauth2 import verificar_token, requiere_rol
+from app.security.oauth2 import requiere_rol
 
 router = APIRouter(
     prefix="/v1/reportes",
     tags=["Reportes / Estadísticas"]
 )
+
+# Estadísticas del dashboard -> solo Admin.
+# Ganancias (ingresos/egresos) también las ve el Cajero (módulo de Caja).
+solo_admin = requiere_rol("Admin")
+admin_cajero = requiere_rol("Admin", "Cajero")
 
 Formato = Literal["json", "pdf", "xlsx"]
 
@@ -198,14 +203,14 @@ def _responder(formato: str, archivo: str, rep: dict):
 # ENDPOINTS
 # ══════════════════════════════════════════════
 @router.get("/ganancias", status_code=status.HTTP_200_OK,
-            dependencies=[Depends(requiere_rol("Admin", "Cajero"))])
+            dependencies=[Depends(admin_cajero)])
 async def reporte_ganancias(desde: Optional[date] = None, hasta: Optional[date] = None,
                             formato: Formato = "json", db: Session = Depends(get_db)):
     return _responder(formato, "ganancias", _rep_ganancias(db, desde, hasta))
 
 
 @router.get("/productos-vendidos", status_code=status.HTTP_200_OK,
-            dependencies=[Depends(requiere_rol("Admin", "Cajero"))])
+            dependencies=[Depends(solo_admin)])
 async def reporte_productos_vendidos(desde: Optional[date] = None, hasta: Optional[date] = None,
                                      orden: Literal["mas", "menos"] = "mas", limite: int = 10,
                                      formato: Formato = "json", db: Session = Depends(get_db)):
@@ -214,31 +219,40 @@ async def reporte_productos_vendidos(desde: Optional[date] = None, hasta: Option
 
 
 @router.get("/pedidos", status_code=status.HTTP_200_OK,
-            dependencies=[Depends(verificar_token)])
+            dependencies=[Depends(solo_admin)])
 async def reporte_pedidos(desde: Optional[date] = None, hasta: Optional[date] = None,
                           formato: Formato = "json", db: Session = Depends(get_db)):
     return _responder(formato, "pedidos", _rep_pedidos(db, desde, hasta))
 
 
 @router.get("/inventario", status_code=status.HTTP_200_OK,
-            dependencies=[Depends(verificar_token)])
+            dependencies=[Depends(solo_admin)])
 async def reporte_inventario(solo_bajo_minimo: bool = False,
                              formato: Formato = "json", db: Session = Depends(get_db)):
     return _responder(formato, "inventario", _rep_inventario(db, solo_bajo_minimo))
 
 
 @router.get("/general", status_code=status.HTTP_200_OK,
-            dependencies=[Depends(requiere_rol("Admin", "Cajero"))])
+            dependencies=[Depends(solo_admin)])
 async def reporte_general(desde: Optional[date] = None, hasta: Optional[date] = None,
-                          formato: Formato = "json", db: Session = Depends(get_db)):
-    """Reporte consolidado: todos los reportes en un solo archivo."""
-    reps = [
-        _rep_ganancias(db, desde, hasta),
-        _rep_productos(db, desde, hasta, "mas", 10),
-        _rep_productos(db, desde, hasta, "menos", 10),
-        _rep_pedidos(db, desde, hasta),
-        _rep_inventario(db, False),
-    ]
+                          formato: Formato = "json", reportes: Optional[str] = None,
+                          db: Session = Depends(get_db)):
+    """Reporte consolidado. Con ?reportes=ganancias,pedidos... incluye solo esos
+    (por defecto, todos)."""
+    disponibles = {
+        "ganancias":  lambda: _rep_ganancias(db, desde, hasta),
+        "mas":        lambda: _rep_productos(db, desde, hasta, "mas", 10),
+        "menos":      lambda: _rep_productos(db, desde, hasta, "menos", 10),
+        "pedidos":    lambda: _rep_pedidos(db, desde, hasta),
+        "inventario": lambda: _rep_inventario(db, False),
+    }
+    if reportes:
+        claves = [c.strip() for c in reportes.split(",") if c.strip() in disponibles]
+    else:
+        claves = list(disponibles.keys())
+    if not claves:
+        claves = list(disponibles.keys())
+    reps = [disponibles[c]() for c in claves]
 
     if formato == "xlsx":
         contenido = a_excel_multi(reps)

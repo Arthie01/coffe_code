@@ -9,19 +9,23 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../theme/colors';
 import fonts from '../theme/fonts';
+import { login } from '../services/api';
 
 // Pantalla inicial de la app: Login.
-// Usa TextInput para capturar credenciales y Alert para validar.
-// Al validar correctamente, entra al Drawer principal (Main).
+// Autentica contra la API Coffee Code (POST /v1/auth/login) usando el
+// servicio de conexión. Si el login es correcto, guarda el token JWT y
+// entra al Drawer principal (Main).
 export default function TextInputAlerts({ navigation }) {
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
+  const [cargando, setCargando] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!correo || !password) {
       Alert.alert('Campos incompletos', 'Ingresa tu correo y contraseña para continuar.');
       return;
@@ -30,7 +34,16 @@ export default function TextInputAlerts({ navigation }) {
       Alert.alert('Correo inválido', 'Escribe un correo electrónico válido.');
       return;
     }
-    navigation.replace('Main');
+
+    try {
+      setCargando(true);
+      await login(correo.trim(), password);
+      navigation.replace('Main');
+    } catch (error) {
+      Alert.alert('No se pudo iniciar sesión', error.message);
+    } finally {
+      setCargando(false);
+    }
   };
 
   return (
@@ -60,10 +73,18 @@ export default function TextInputAlerts({ navigation }) {
           />
 
           <Pressable
-            style={({ pressed }) => [styles.button, pressed && { backgroundColor: colors.primaryDark }]}
+            style={({ pressed }) => [
+              styles.button,
+              (pressed || cargando) && { backgroundColor: colors.primaryDark },
+            ]}
             onPress={handleLogin}
+            disabled={cargando}
           >
-            <Text style={styles.buttonText}>INICIAR SESIÓN</Text>
+            {cargando ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.buttonText}>INICIAR SESIÓN</Text>
+            )}
           </Pressable>
 
           <Pressable onPress={() => Alert.alert('Recuperar contraseña', 'Contacta al administrador.')}>

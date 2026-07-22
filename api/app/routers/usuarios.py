@@ -9,11 +9,12 @@ from app.data.credencial_usuario import CredencialUsuario
 from app.data.rol import Rol
 from app.data.estatus import Estatus
 from app.models.usuarios import CrearUsuario, ActualizarUsuario
-from app.security.oauth2 import verificar_token
+from app.security.oauth2 import verificar_token, requiere_rol
 
 router = APIRouter(
     prefix="/v1/usuarios",
-    tags=["Usuarios"]
+    tags=["Usuarios"],
+    dependencies=[Depends(requiere_rol("Admin"))]
 )
 
 

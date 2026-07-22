@@ -14,7 +14,7 @@ from app.models.catalogos import (
     CrearCategoriaGasto, ActualizarCategoriaGasto,
     CrearCategoriaComida, ActualizarCategoriaComida,
 )
-from app.security.oauth2 import verificar_token
+from app.security.oauth2 import verificar_token, requiere_rol
 
 router = APIRouter(
     prefix="/v1/catalogos",
@@ -26,13 +26,13 @@ router = APIRouter(
 # ROLES
 # ══════════════════════════════════════════════
 
-@router.get("/roles", status_code=status.HTTP_200_OK)
+@router.get("/roles", status_code=status.HTTP_200_OK, dependencies=[Depends(verificar_token)])
 async def consultar_roles(db: Session = Depends(get_db)):
     roles = db.query(Rol).all()
     return {"status": "200", "total": len(roles), "data": roles}
 
 
-@router.post("/roles", status_code=status.HTTP_201_CREATED)
+@router.post("/roles", status_code=status.HTTP_201_CREATED, dependencies=[Depends(requiere_rol("Admin"))])
 async def crear_rol(data: CrearRol, db: Session = Depends(get_db)):
     existe = db.query(Rol).filter(Rol.nombre == data.nombre).first()
     if existe:
@@ -44,7 +44,7 @@ async def crear_rol(data: CrearRol, db: Session = Depends(get_db)):
     return {"status": "201", "mensaje": "Rol creado", "data": nuevo}
 
 
-@router.put("/roles/{id}", status_code=status.HTTP_200_OK)
+@router.put("/roles/{id}", status_code=status.HTTP_200_OK, dependencies=[Depends(requiere_rol("Admin"))])
 async def actualizar_rol(id: int, data: ActualizarRol, db: Session = Depends(get_db)):
     rol = db.query(Rol).filter(Rol.id == id).first()
     if not rol:
@@ -57,7 +57,7 @@ async def actualizar_rol(id: int, data: ActualizarRol, db: Session = Depends(get
 
 
 @router.delete("/roles/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_token)])
+               dependencies=[Depends(requiere_rol("Admin"))])
 async def eliminar_rol(id: int, db: Session = Depends(get_db)):
     rol = db.query(Rol).filter(Rol.id == id).first()
     if not rol:
@@ -71,13 +71,13 @@ async def eliminar_rol(id: int, db: Session = Depends(get_db)):
 # ESTATUS
 # ══════════════════════════════════════════════
 
-@router.get("/estatus", status_code=status.HTTP_200_OK)
+@router.get("/estatus", status_code=status.HTTP_200_OK, dependencies=[Depends(verificar_token)])
 async def consultar_estatus(db: Session = Depends(get_db)):
     estatus = db.query(Estatus).all()
     return {"status": "200", "total": len(estatus), "data": estatus}
 
 
-@router.post("/estatus", status_code=status.HTTP_201_CREATED)
+@router.post("/estatus", status_code=status.HTTP_201_CREATED, dependencies=[Depends(requiere_rol("Admin"))])
 async def crear_estatus(data: CrearEstatus, db: Session = Depends(get_db)):
     existe = db.query(Estatus).filter(Estatus.nombre == data.nombre).first()
     if existe:
@@ -89,7 +89,7 @@ async def crear_estatus(data: CrearEstatus, db: Session = Depends(get_db)):
     return {"status": "201", "mensaje": "Estatus creado", "data": nuevo}
 
 
-@router.put("/estatus/{id}", status_code=status.HTTP_200_OK)
+@router.put("/estatus/{id}", status_code=status.HTTP_200_OK, dependencies=[Depends(requiere_rol("Admin"))])
 async def actualizar_estatus(id: int, data: ActualizarEstatus, db: Session = Depends(get_db)):
     est = db.query(Estatus).filter(Estatus.id == id).first()
     if not est:
@@ -102,7 +102,7 @@ async def actualizar_estatus(id: int, data: ActualizarEstatus, db: Session = Dep
 
 
 @router.delete("/estatus/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_token)])
+               dependencies=[Depends(requiere_rol("Admin"))])
 async def eliminar_estatus(id: int, db: Session = Depends(get_db)):
     est = db.query(Estatus).filter(Estatus.id == id).first()
     if not est:
@@ -116,13 +116,13 @@ async def eliminar_estatus(id: int, db: Session = Depends(get_db)):
 # MÉTODOS DE PAGO
 # ══════════════════════════════════════════════
 
-@router.get("/metodos-pago", status_code=status.HTTP_200_OK)
+@router.get("/metodos-pago", status_code=status.HTTP_200_OK, dependencies=[Depends(verificar_token)])
 async def consultar_metodos_pago(db: Session = Depends(get_db)):
     metodos = db.query(MetodoPago).all()
     return {"status": "200", "total": len(metodos), "data": metodos}
 
 
-@router.post("/metodos-pago", status_code=status.HTTP_201_CREATED)
+@router.post("/metodos-pago", status_code=status.HTTP_201_CREATED, dependencies=[Depends(requiere_rol("Admin"))])
 async def crear_metodo_pago(data: CrearMetodoPago, db: Session = Depends(get_db)):
     existe = db.query(MetodoPago).filter(MetodoPago.nombre == data.nombre).first()
     if existe:
@@ -134,7 +134,7 @@ async def crear_metodo_pago(data: CrearMetodoPago, db: Session = Depends(get_db)
     return {"status": "201", "mensaje": "Método de pago creado", "data": nuevo}
 
 
-@router.put("/metodos-pago/{id}", status_code=status.HTTP_200_OK)
+@router.put("/metodos-pago/{id}", status_code=status.HTTP_200_OK, dependencies=[Depends(requiere_rol("Admin"))])
 async def actualizar_metodo_pago(id: int, data: ActualizarMetodoPago, db: Session = Depends(get_db)):
     metodo = db.query(MetodoPago).filter(MetodoPago.id == id).first()
     if not metodo:
@@ -147,7 +147,7 @@ async def actualizar_metodo_pago(id: int, data: ActualizarMetodoPago, db: Sessio
 
 
 @router.delete("/metodos-pago/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_token)])
+               dependencies=[Depends(requiere_rol("Admin"))])
 async def eliminar_metodo_pago(id: int, db: Session = Depends(get_db)):
     metodo = db.query(MetodoPago).filter(MetodoPago.id == id).first()
     if not metodo:
@@ -161,13 +161,13 @@ async def eliminar_metodo_pago(id: int, db: Session = Depends(get_db)):
 # CATEGORÍAS DE GASTO
 # ══════════════════════════════════════════════
 
-@router.get("/categorias-gasto", status_code=status.HTTP_200_OK)
+@router.get("/categorias-gasto", status_code=status.HTTP_200_OK, dependencies=[Depends(verificar_token)])
 async def consultar_categorias_gasto(db: Session = Depends(get_db)):
     categorias = db.query(CategoriaGasto).all()
     return {"status": "200", "total": len(categorias), "data": categorias}
 
 
-@router.post("/categorias-gasto", status_code=status.HTTP_201_CREATED)
+@router.post("/categorias-gasto", status_code=status.HTTP_201_CREATED, dependencies=[Depends(requiere_rol("Admin"))])
 async def crear_categoria_gasto(data: CrearCategoriaGasto, db: Session = Depends(get_db)):
     existe = db.query(CategoriaGasto).filter(CategoriaGasto.nombre == data.nombre).first()
     if existe:
@@ -179,7 +179,7 @@ async def crear_categoria_gasto(data: CrearCategoriaGasto, db: Session = Depends
     return {"status": "201", "mensaje": "Categoría de gasto creada", "data": nuevo}
 
 
-@router.put("/categorias-gasto/{id}", status_code=status.HTTP_200_OK)
+@router.put("/categorias-gasto/{id}", status_code=status.HTTP_200_OK, dependencies=[Depends(requiere_rol("Admin"))])
 async def actualizar_categoria_gasto(id: int, data: ActualizarCategoriaGasto, db: Session = Depends(get_db)):
     cat = db.query(CategoriaGasto).filter(CategoriaGasto.id == id).first()
     if not cat:
@@ -192,7 +192,7 @@ async def actualizar_categoria_gasto(id: int, data: ActualizarCategoriaGasto, db
 
 
 @router.delete("/categorias-gasto/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_token)])
+               dependencies=[Depends(requiere_rol("Admin"))])
 async def eliminar_categoria_gasto(id: int, db: Session = Depends(get_db)):
     cat = db.query(CategoriaGasto).filter(CategoriaGasto.id == id).first()
     if not cat:
@@ -206,13 +206,13 @@ async def eliminar_categoria_gasto(id: int, db: Session = Depends(get_db)):
 # CATEGORÍAS DE COMIDA
 # ══════════════════════════════════════════════
 
-@router.get("/categorias-comida", status_code=status.HTTP_200_OK)
+@router.get("/categorias-comida", status_code=status.HTTP_200_OK, dependencies=[Depends(verificar_token)])
 async def consultar_categorias_comida(db: Session = Depends(get_db)):
     categorias = db.query(CategoriaComida).all()
     return {"status": "200", "total": len(categorias), "data": categorias}
 
 
-@router.post("/categorias-comida", status_code=status.HTTP_201_CREATED)
+@router.post("/categorias-comida", status_code=status.HTTP_201_CREATED, dependencies=[Depends(requiere_rol("Admin"))])
 async def crear_categoria_comida(data: CrearCategoriaComida, db: Session = Depends(get_db)):
     existe = db.query(CategoriaComida).filter(CategoriaComida.nombre == data.nombre).first()
     if existe:
@@ -224,7 +224,7 @@ async def crear_categoria_comida(data: CrearCategoriaComida, db: Session = Depen
     return {"status": "201", "mensaje": "Categoría de comida creada", "data": nuevo}
 
 
-@router.put("/categorias-comida/{id}", status_code=status.HTTP_200_OK)
+@router.put("/categorias-comida/{id}", status_code=status.HTTP_200_OK, dependencies=[Depends(requiere_rol("Admin"))])
 async def actualizar_categoria_comida(id: int, data: ActualizarCategoriaComida, db: Session = Depends(get_db)):
     cat = db.query(CategoriaComida).filter(CategoriaComida.id == id).first()
     if not cat:
@@ -237,7 +237,7 @@ async def actualizar_categoria_comida(id: int, data: ActualizarCategoriaComida, 
 
 
 @router.delete("/categorias-comida/{id}", status_code=status.HTTP_200_OK,
-               dependencies=[Depends(verificar_token)])
+               dependencies=[Depends(requiere_rol("Admin"))])
 async def eliminar_categoria_comida(id: int, db: Session = Depends(get_db)):
     cat = db.query(CategoriaComida).filter(CategoriaComida.id == id).first()
     if not cat:

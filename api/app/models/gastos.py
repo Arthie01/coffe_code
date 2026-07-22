@@ -9,7 +9,6 @@ class ItemCompraIngrediente(BaseModel):
 
 
 class CrearGasto(BaseModel):
-    id_usuario: int = Field(gt=0)
     id_categoria_gasto: int = Field(gt=0)
     descripcion: Optional[str] = Field(default=None, max_length=255)
     monto: float = Field(gt=0)

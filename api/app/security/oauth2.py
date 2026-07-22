@@ -1,9 +1,9 @@
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
@@ -21,8 +21,9 @@ SECRET_KEY = os.getenv(
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-# tokenUrl apunta al endpoint que emite el token (login por formulario)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/auth/token")
+# Esquema Bearer: el token se obtiene en POST /v1/auth/login y se envía en el
+# header Authorization: Bearer <token>. En Swagger se pega con el botón Authorize.
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def crear_token(data: dict, expires_delta: timedelta | None = None) -> str:
@@ -36,9 +37,17 @@ def crear_token(data: dict, expires_delta: timedelta | None = None) -> str:
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def verificar_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
+def verificar_token(
+    credenciales: Annotated[Optional[HTTPAuthorizationCredentials], Depends(bearer_scheme)]
+) -> str:
+    if credenciales is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No se proporcionó un token",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(credenciales.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         correo: str = payload.get("sub")
         if correo is None:
             raise HTTPException(
@@ -53,6 +62,21 @@ def verificar_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
             detail="Token inválido o expirado",
             headers={"WWW-Authenticate": "Bearer"}
         )
+
+
+def usuario_actual(
+    correo: Annotated[str, Depends(verificar_token)],
+    db: Session = Depends(get_db)
+) -> Usuario:
+    """Devuelve el usuario autenticado a partir del token (sin restricción de rol)."""
+    cred = db.query(CredencialUsuario).filter(CredencialUsuario.correo == correo).first()
+    usuario = db.query(Usuario).filter(Usuario.id == cred.id_usuario).first() if cred else None
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario del token no encontrado"
+        )
+    return usuario
 
 
 def requiere_rol(*roles_permitidos: str):

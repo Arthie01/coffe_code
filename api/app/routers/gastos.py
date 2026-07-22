@@ -9,11 +9,12 @@ from app.data.ingrediente import Ingrediente
 from app.data.categoria_gasto import CategoriaGasto
 from app.data.usuario import Usuario
 from app.models.gastos import CrearGasto
-from app.security.oauth2 import verificar_token
+from app.security.oauth2 import verificar_token, requiere_rol, usuario_actual
 
 router = APIRouter(
     prefix="/v1/gastos",
-    tags=["Gastos"]
+    tags=["Gastos"],
+    dependencies=[Depends(requiere_rol("Admin", "Cajero"))]
 )
 
 
@@ -82,9 +83,13 @@ async def consultar_uno(id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def crear(data: CrearGasto, db: Session = Depends(get_db)):
+async def crear(
+    data: CrearGasto,
+    usuario: Usuario = Depends(usuario_actual),
+    db: Session = Depends(get_db)
+):
     nuevo = Gasto(
-        id_usuario=data.id_usuario,
+        id_usuario=usuario.id,               # del token, no del body
         id_categoria_gasto=data.id_categoria_gasto,
         descripcion=data.descripcion,
         monto=data.monto

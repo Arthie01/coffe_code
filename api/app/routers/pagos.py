@@ -7,10 +7,12 @@ from app.data.pedido import Pedido
 from app.data.metodo_pago import MetodoPago
 from app.data.usuario import Usuario
 from app.models.pagos import CrearPago
+from app.security.oauth2 import requiere_rol, usuario_actual
 
 router = APIRouter(
     prefix="/v1/pagos",
-    tags=["Pagos"]
+    tags=["Pagos"],
+    dependencies=[Depends(requiere_rol("Admin", "Cajero"))]
 )
 
 
@@ -63,7 +65,11 @@ async def consultar_uno(id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def crear(data: CrearPago, db: Session = Depends(get_db)):
+async def crear(
+    data: CrearPago,
+    usuario: Usuario = Depends(usuario_actual),
+    db: Session = Depends(get_db)
+):
     pedido = db.query(Pedido).filter(Pedido.id == data.id_pedido).first()
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
@@ -73,21 +79,23 @@ async def crear(data: CrearPago, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Este pedido ya tiene un pago registrado")
 
     monto_total = float(pedido.precio_total)
+    # Si no envían monto_recibido, se asume pago exacto (recibido = total)
+    recibido = data.monto_recibido if data.monto_recibido is not None else monto_total
 
-    if data.monto_recibido < monto_total:
+    if recibido < monto_total:
         raise HTTPException(
             status_code=400,
-            detail=f"Monto recibido (${data.monto_recibido:.2f}) es menor al total (${monto_total:.2f})"
+            detail=f"Monto recibido (${recibido:.2f}) es menor al total (${monto_total:.2f})"
         )
 
-    cambio = round(data.monto_recibido - monto_total, 2)
+    cambio = round(recibido - monto_total, 2)
 
     nuevo = Pago(
         id_pedido=data.id_pedido,
         id_metodo_pago=data.id_metodo_pago,
-        id_usuario=data.id_usuario,
+        id_usuario=usuario.id,               # del token, no del body
         monto_total=monto_total,
-        monto_recibido=data.monto_recibido,
+        monto_recibido=recibido,
         cambio=cambio
     )
     db.add(nuevo)
