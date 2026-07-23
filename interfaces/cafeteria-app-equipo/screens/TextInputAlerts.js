@@ -14,13 +14,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../theme/colors';
 import fonts from '../theme/fonts';
-import { login } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 // Pantalla inicial de la app: Login.
 // Autentica contra la API Coffee Code (POST /v1/auth/login) usando el
 // servicio de conexión. Si el login es correcto, guarda el token JWT y
 // entra al Drawer principal (Main).
 export default function TextInputAlerts({ navigation }) {
+  const { iniciarSesion } = useAuth();
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
   const [cargando, setCargando] = useState(false);
@@ -37,7 +38,7 @@ export default function TextInputAlerts({ navigation }) {
 
     try {
       setCargando(true);
-      await login(correo.trim(), password);
+      await iniciarSesion(correo.trim(), password);
       navigation.replace('Main');
     } catch (error) {
       Alert.alert('No se pudo iniciar sesión', error.message);

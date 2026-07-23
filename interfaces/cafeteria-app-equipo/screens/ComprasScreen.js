@@ -1,35 +1,77 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-  SafeAreaView, ScrollView, View, Text, StyleSheet, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform,
+  SafeAreaView, ScrollView, View, Text, StyleSheet, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useOrders } from '../context/OrderContext';
+import { useFocusEffect } from '@react-navigation/native';
+import { getIngredientes, crearGasto, CATEGORIA_GASTO_COMPRA } from '../services/api';
 import colors from '../theme/colors';
 import fonts from '../theme/fonts';
 
 // Módulo Caja: Compras de suministros. Registra la compra de un ingrediente
-// (suma al inventario y genera un gasto automáticamente).
+// como un gasto con detalle de compra (POST /v1/gastos/ con compra_ingredientes).
+// La API suma la cantidad al stock del ingrediente automáticamente.
 export default function ComprasScreen() {
-  const { ingredientes, registrarCompra } = useOrders();
-  const [seleccion, setSeleccion] = useState(ingredientes[0]?.id || null);
+  const [ingredientes, setIngredientes] = useState([]);
+  const [seleccion, setSeleccion] = useState(null);
   const [cantidad, setCantidad] = useState('');
   const [precio, setPrecio] = useState('');
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+
+  const cargar = useCallback(async () => {
+    try {
+      setCargando(true);
+      const r = await getIngredientes();
+      setIngredientes(r.data);
+      setSeleccion((prev) => prev || r.data[0]?.id || null);
+    } catch (e) {
+      setIngredientes([]);
+    } finally {
+      setCargando(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { cargar(); }, [cargar]));
 
   const ingSel = ingredientes.find((i) => i.id === seleccion);
 
-  const comprar = () => {
+  const comprar = async () => {
     const cant = parseFloat(cantidad);
     const pu = parseFloat(precio);
-    if (!seleccion || isNaN(cant) || cant <= 0 || isNaN(pu) || pu <= 0) {
+    if (!seleccion || isNaN(cant) || cant <= 0 || isNaN(pu) || pu < 0) {
       Alert.alert('Datos incompletos', 'Elige un ingrediente y captura cantidad y precio válidos.');
       return;
     }
-    registrarCompra(seleccion, cant, pu);
-    Alert.alert('Compra registrada', `Se agregaron ${cant} ${ingSel?.unidad} de ${ingSel?.nombre} al inventario y se generó un gasto de $${(cant * pu).toFixed(2)}.`);
-    setCantidad(''); setPrecio('');
+    const monto = +(cant * pu).toFixed(2);
+    try {
+      setGuardando(true);
+      await crearGasto({
+        id_categoria_gasto: CATEGORIA_GASTO_COMPRA,
+        descripcion: `Compra de ${cant} ${ingSel?.unidad_medida} de ${ingSel?.nombre}`,
+        monto,
+        compra_ingredientes: [{ id_ingrediente: seleccion, cantidad: cant, precio_unitario: pu }],
+      });
+      Alert.alert('Compra registrada', `Se agregaron ${cant} ${ingSel?.unidad_medida} de ${ingSel?.nombre} al inventario y se generó un gasto de $${monto.toFixed(2)}.`);
+      setCantidad(''); setPrecio('');
+      cargar();
+    } catch (e) {
+      Alert.alert('No se pudo registrar', e.message);
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const total = (parseFloat(cantidad) || 0) * (parseFloat(precio) || 0);
+
+  if (cargando) {
+    return (
+      <SafeAreaView style={[styles.safe, styles.center]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Cargando suministros...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -50,11 +92,11 @@ export default function ComprasScreen() {
 
             {ingSel && (
               <Text style={styles.stockNote}>
-                Stock actual: {ingSel.stock} {ingSel.unidad} · mín. {ingSel.minimo} {ingSel.unidad}
+                Stock actual: {parseFloat(ingSel.stock_actual)} {ingSel.unidad_medida} · mín. {parseFloat(ingSel.stock_minimo)} {ingSel.unidad_medida}
               </Text>
             )}
 
-            <Text style={styles.fieldLabel}>Cantidad ({ingSel?.unidad || '—'})</Text>
+            <Text style={styles.fieldLabel}>Cantidad ({ingSel?.unidad_medida || '—'})</Text>
             <TextInput style={styles.input} placeholder="ej. 5" placeholderTextColor={colors.textSecondary}
               value={cantidad} onChangeText={setCantidad} keyboardType="decimal-pad" />
 
@@ -67,9 +109,13 @@ export default function ComprasScreen() {
               <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
             </View>
 
-            <Pressable style={styles.btn} onPress={comprar}>
-              <Ionicons name="cart-outline" size={18} color={colors.white} />
-              <Text style={styles.btnText}>REGISTRAR COMPRA</Text>
+            <Pressable style={styles.btn} onPress={comprar} disabled={guardando}>
+              {guardando ? <ActivityIndicator color={colors.white} /> : (
+                <>
+                  <Ionicons name="cart-outline" size={18} color={colors.white} />
+                  <Text style={styles.btnText}>REGISTRAR COMPRA</Text>
+                </>
+              )}
             </Pressable>
           </View>
 
@@ -85,6 +131,8 @@ export default function ComprasScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
+  center: { justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 12, color: colors.textSecondary },
   scroll: { padding: 20, paddingBottom: 40 },
   title: { fontSize: 22, fontFamily: fonts.bold, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16, color: colors.text },
   panel: { backgroundColor: colors.white, borderRadius: 12, padding: 16, marginBottom: 16 },

@@ -11,6 +11,7 @@ import {
   SpaceGrotesk_600SemiBold,
   SpaceGrotesk_700Bold,
 } from '@expo-google-fonts/space-grotesk';
+import { AuthProvider } from './context/AuthContext';
 import { OrderProvider } from './context/OrderContext';
 
 import TextInputAlerts from './screens/TextInputAlerts';
@@ -41,14 +42,16 @@ export default function App() {
   }
 
   return (
-    <OrderProvider>
-      <NavigationContainer>
-        <StatusBar style="dark" />
-        <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Login" component={TextInputAlerts} />
-          <Stack.Screen name="Main" component={DrawerNavigator} />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </OrderProvider>
+    <AuthProvider>
+      <OrderProvider>
+        <NavigationContainer>
+          <StatusBar style="dark" />
+          <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Login" component={TextInputAlerts} />
+            <Stack.Screen name="Main" component={DrawerNavigator} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </OrderProvider>
+    </AuthProvider>
   );
 }

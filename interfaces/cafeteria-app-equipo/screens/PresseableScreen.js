@@ -1,94 +1,108 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, SafeAreaView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, Pressable, SafeAreaView, ActivityIndicator, ScrollView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useOrders } from '../context/OrderContext';
+import { getMesas, ESTATUS } from '../services/api';
 import colors from '../theme/colors';
 import fonts from '../theme/fonts';
 
-const mesasIniciales = [
-  { id: '1', nombre: 'Mesa 1', ocupada: false },
-  { id: '2', nombre: 'Mesa 2', ocupada: true },
-  { id: '3', nombre: 'Mesa 3', ocupada: false },
-  { id: '4', nombre: 'Mesa 4', ocupada: false },
-];
-
-// Módulo Mesero: selección de mesa con Pressable.
-// La mesa elegida se guarda en el Context para usarse en el resto del flujo.
+// Módulo Mesero: selección de mesa. Las mesas se traen de la API
+// (GET /v1/mesas/). La mesa elegida se guarda en el Context (con su id real)
+// para armar el pedido en el resto del flujo.
 export default function PresseableScreen({ navigation }) {
-  const { setMesaActual } = useOrders();
-  const [seleccionId, setSeleccionId] = useState(null);
+  const { mesa, setMesa } = useOrders();
+  const [mesas, setMesas] = useState([]);
+  const [cargando, setCargando] = useState(true);
 
-  const seleccionar = (mesa) => {
-    setSeleccionId(mesa.id);
-    setMesaActual(mesa.nombre);
-  };
+  const cargar = useCallback(async () => {
+    try {
+      setCargando(true);
+      const r = await getMesas();
+      setMesas(r.data);
+    } catch (e) {
+      setMesas([]);
+    } finally {
+      setCargando(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { cargar(); }, [cargar]));
+
+  const seleccionar = (m) => setMesa({ id: m.id, nombre: m.nombre });
 
   const continuar = () => {
-    if (!seleccionId) return;
+    if (!mesa) return;
     navigation.navigate('MenuPlatillos');
   };
 
-  const paraLlevar = () => {
-    setSeleccionId('llevar');
-    setMesaActual('Para llevar');
-    navigation.navigate('MenuPlatillos');
-  };
+  if (cargando) {
+    return (
+      <SafeAreaView style={[styles.safe, styles.center]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Cargando mesas...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={{ padding: 20 }}>
+      <ScrollView contentContainerStyle={{ padding: 20 }}>
         <Text style={styles.title}>SELECCIONAR MESA</Text>
         <Text style={styles.subtitle}>Asigna una ubicación para el nuevo pedido.</Text>
 
-        <View style={styles.grid}>
-          {mesasIniciales.map((mesa) => (
-            <Pressable
-              key={mesa.id}
-              disabled={mesa.ocupada}
-              onPress={() => seleccionar(mesa)}
-              style={({ pressed }) => [
-                styles.mesa,
-                mesa.ocupada && styles.mesaOcupada,
-                seleccionId === mesa.id && styles.mesaSeleccionada,
-                pressed && !mesa.ocupada && { opacity: 0.7 },
-              ]}
-            >
-              <Text style={styles.mesaTexto}>{mesa.nombre}</Text>
-              {mesa.ocupada && <Text style={styles.mesaEstado}>OCUPADA</Text>}
-            </Pressable>
-          ))}
-        </View>
+        {mesas.length === 0 && (
+          <Text style={styles.empty}>No se pudieron cargar las mesas. Revisa tu conexión.</Text>
+        )}
 
-        <Pressable
-          style={[styles.paraLlevarBtn, seleccionId === 'llevar' && styles.mesaSeleccionada]}
-          onPress={paraLlevar}
-        >
-          <Text style={styles.paraLlevarText}>
-            <Ionicons name="bag-handle-outline" size={15} color={colors.text} />  Para Llevar
-          </Text>
-        </Pressable>
+        <View style={styles.grid}>
+          {mesas.map((m) => {
+            const ocupada = m.id_estatus === ESTATUS.OCUPADA;
+            const seleccionada = mesa?.id === m.id;
+            return (
+              <Pressable
+                key={m.id}
+                disabled={ocupada}
+                onPress={() => seleccionar(m)}
+                style={({ pressed }) => [
+                  styles.mesa,
+                  ocupada && styles.mesaOcupada,
+                  seleccionada && styles.mesaSeleccionada,
+                  pressed && !ocupada && { opacity: 0.7 },
+                ]}
+              >
+                <Text style={[styles.mesaTexto, seleccionada && { color: colors.white }]}>{m.nombre}</Text>
+                <Text style={[styles.mesaCap, seleccionada && { color: colors.white }]}>
+                  {ocupada ? 'OCUPADA' : `${m.capacidad} pers.`}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
         <Pressable
           style={({ pressed }) => [
             styles.button,
-            !seleccionId && styles.buttonDisabled,
-            pressed && seleccionId && { backgroundColor: colors.primaryDark },
+            !mesa && styles.buttonDisabled,
+            pressed && mesa && { backgroundColor: colors.primaryDark },
           ]}
-          disabled={!seleccionId}
+          disabled={!mesa}
           onPress={continuar}
         >
           <Text style={styles.buttonText}>CONTINUAR AL MENÚ</Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
+  center: { justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 12, color: colors.textSecondary },
   title: { fontSize: 22, fontFamily: fonts.bold, textTransform: 'uppercase', letterSpacing: 1, color: colors.text },
   subtitle: { fontSize: 12, color: colors.textSecondary, marginTop: 4, marginBottom: 20 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
+  empty: { fontSize: 13, color: colors.textSecondary, marginBottom: 16 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
   mesa: {
     width: '47%',
     backgroundColor: colors.white,
@@ -99,19 +113,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   mesaOcupada: { backgroundColor: '#F3DEDE' },
-  mesaSeleccionada: { backgroundColor: colors.primary },
+  mesaSeleccionada: { backgroundColor: colors.primary, borderColor: colors.primary },
   mesaTexto: { fontFamily: fonts.bold, color: colors.text },
-  mesaEstado: { fontSize: 10, color: colors.danger, marginTop: 4, fontWeight: 'bold' },
-  paraLlevarBtn: {
-    backgroundColor: colors.white,
-    borderRadius: 14,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 24,
-  },
-  paraLlevarText: { fontFamily: fonts.bold, color: colors.text },
+  mesaCap: { fontSize: 10, color: colors.textSecondary, marginTop: 4, fontFamily: fonts.medium },
   button: { backgroundColor: colors.primary, padding: 16, borderRadius: 12, alignItems: 'center' },
   buttonDisabled: { backgroundColor: colors.border },
   buttonText: { color: colors.white, fontFamily: fonts.bold, letterSpacing: 1 },

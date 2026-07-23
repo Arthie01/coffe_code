@@ -1,46 +1,52 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Modal, SafeAreaView, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Modal, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { useOrders } from '../context/OrderContext';
+import { crearPedido } from '../services/api';
 import colors from '../theme/colors';
 import fonts from '../theme/fonts';
 
-// Revisión final del pedido: Modal centrado para ver el desglose
-// y Bottom Sheet para confirmar el envío a cocina (esto crea el
-// pedido real en el Context, visible luego en Cocina y Caja).
+// Revisión final del pedido. Al confirmar se crea el pedido REAL en la API
+// (POST /v1/pedidos/) con el id_mesa y los id_comida reales. El mesero queda
+// auto-asignado por el token; el pedido nace en estatus "Pendiente".
 export default function ModalBottomSheetScreen({ navigation }) {
-  const { cart, mesaActual, submitOrder } = useOrders();
-  const [modalVisible, setModalVisible] = useState(false);
+  const { cart, mesa, total, clearCart, setMesa } = useOrders();
   const [sheetVisible, setSheetVisible] = useState(false);
+  const [enviando, setEnviando] = useState(false);
 
-  const subtotal = cart.reduce((sum, p) => sum + p.precio * p.cantidad, 0);
-  const iva = subtotal * 0.16;
-  const total = subtotal + iva;
-
-  const confirmarEnvio = () => {
-    const pedido = submitOrder();
-    setSheetVisible(false);
-    if (pedido) {
-      Alert.alert('Pedido enviado', `Ticket #${pedido.id} enviado a cocina.`, [
+  const confirmarEnvio = async () => {
+    if (cart.length === 0 || !mesa) return;
+    try {
+      setEnviando(true);
+      const body = {
+        id_mesa: mesa.id,
+        items: cart.map((p) => ({ id_comida: p.id_comida, cantidad: p.cantidad })),
+      };
+      const r = await crearPedido(body);
+      setSheetVisible(false);
+      clearCart();
+      setMesa(null);
+      Alert.alert('Pedido enviado', `Ticket #${r.data.id} creado por $${r.data.precio_total.toFixed(2)}.`, [
         {
           text: 'OK',
           onPress: () => {
-            // Regresa a la pantalla principal del Drawer (fuera del stack de Mesero)
             const parent = navigation.getParent();
-            if (parent) {
-              parent.navigate('Dashboard');
-            } else {
-              navigation.popToTop();
-            }
+            if (parent) parent.navigate('Dashboard');
+            else navigation.popToTop();
           },
         },
       ]);
+    } catch (e) {
+      setSheetVisible(false);
+      Alert.alert('No se pudo crear el pedido', e.message);
+    } finally {
+      setEnviando(false);
     }
   };
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        <Text style={styles.title}>{mesaActual || 'Sin mesa'}</Text>
+        <Text style={styles.title}>{mesa?.nombre || 'Sin mesa'}</Text>
         <Text style={styles.subtitle}>{cart.length} platillo(s) en el pedido</Text>
 
         {cart.length === 0 ? (
@@ -48,10 +54,8 @@ export default function ModalBottomSheetScreen({ navigation }) {
         ) : (
           <View style={styles.detailCard}>
             {cart.map((p) => (
-              <View key={p.id} style={styles.row}>
-                <Text style={styles.rowText}>
-                  {p.cantidad}x {p.nombre}
-                </Text>
+              <View key={p.id_comida} style={styles.row}>
+                <Text style={styles.rowText}>{p.cantidad}x {p.nombre}</Text>
                 <Text style={styles.rowText}>${(p.precio * p.cantidad).toFixed(2)}</Text>
               </View>
             ))}
@@ -63,54 +67,28 @@ export default function ModalBottomSheetScreen({ navigation }) {
         )}
 
         {cart.length > 0 && (
-          <>
-            <Pressable style={styles.button} onPress={() => setModalVisible(true)}>
-              <Text style={styles.buttonText}>VER DESGLOSE</Text>
-            </Pressable>
-
-            <Pressable style={[styles.button, { backgroundColor: colors.text }]} onPress={() => setSheetVisible(true)}>
-              <Text style={styles.buttonText}>ENVIAR A COCINA</Text>
-            </Pressable>
-          </>
+          <Pressable style={[styles.button, { backgroundColor: colors.text }]} onPress={() => setSheetVisible(true)}>
+            <Text style={styles.buttonText}>ENVIAR A COCINA</Text>
+          </Pressable>
         )}
       </View>
 
-      {/* Modal centrado con el desglose */}
-      <Modal visible={modalVisible} animationType="fade" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Desglose del pedido</Text>
-            <View style={styles.row}>
-              <Text>Subtotal</Text>
-              <Text>${subtotal.toFixed(2)}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text>IVA (16%)</Text>
-              <Text>${iva.toFixed(2)}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.total}>Total</Text>
-              <Text style={styles.total}>${total.toFixed(2)}</Text>
-            </View>
-            <Pressable style={styles.closeBtn} onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeBtnText}>Cerrar</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
-
       {/* Bottom sheet de confirmación */}
-      <Modal visible={sheetVisible} animationType="slide" transparent>
+      <Modal visible={sheetVisible} animationType="slide" transparent onRequestClose={() => setSheetVisible(false)}>
         <View style={styles.sheetOverlay}>
-          <Pressable style={{ flex: 1 }} onPress={() => setSheetVisible(false)} />
+          <Pressable style={{ flex: 1 }} onPress={() => !enviando && setSheetVisible(false)} />
           <View style={styles.sheet}>
             <View style={styles.sheetHandle} />
             <Text style={styles.modalTitle}>Confirmar pedido a cocina</Text>
             <Text style={styles.sheetText}>
-              El pedido de {mesaActual} será enviado a cocina por un total de ${total.toFixed(2)}.
+              El pedido de {mesa?.nombre} se creará por un total de ${total.toFixed(2)}.
             </Text>
-            <Pressable style={[styles.button, { backgroundColor: colors.primary, marginTop: 10 }]} onPress={confirmarEnvio}>
-              <Text style={styles.buttonText}>CONFIRMAR</Text>
+            <Pressable
+              style={[styles.button, { backgroundColor: colors.primary, marginTop: 10 }]}
+              onPress={confirmarEnvio}
+              disabled={enviando}
+            >
+              {enviando ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>CONFIRMAR</Text>}
             </Pressable>
           </View>
         </View>
@@ -131,11 +109,7 @@ const styles = StyleSheet.create({
   total: { fontFamily: fonts.bold, color: colors.primary },
   button: { backgroundColor: colors.primary, padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 12 },
   buttonText: { color: colors.white, fontFamily: fonts.bold, letterSpacing: 0.5, fontSize: 12 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
-  modalBox: { backgroundColor: colors.white, borderRadius: 16, padding: 20, width: '85%' },
   modalTitle: { fontFamily: fonts.bold, fontSize: 16, marginBottom: 12, color: colors.text },
-  closeBtn: { marginTop: 16, alignSelf: 'flex-end' },
-  closeBtnText: { color: colors.primary, fontFamily: fonts.bold },
   sheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
   sheetHandle: {

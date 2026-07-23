@@ -1,9 +1,10 @@
 // Servicio central de conexión con la API Coffee Code.
 //
-// Misma arquitectura que en PM_204 (usuarioApi): se define una URL base y se
-// consume la API con `fetch`. La diferencia es que esta API está protegida con
-// JWT, así que guardamos el token en memoria tras el login y lo mandamos en el
-// header Authorization de cada petición.
+// Misma arquitectura que en PM_204 (usuarioApi): una URL base + `fetch`.
+// La diferencia es que esta API está protegida con JWT, así que guardamos el
+// token en memoria tras el login y lo mandamos en el header Authorization de
+// cada petición. Aquí viven TODAS las llamadas a la API; las pantallas solo
+// importan estas funciones.
 
 import { API_URL } from '../config/api';
 
@@ -11,10 +12,18 @@ import { API_URL } from '../config/api';
 let _token = null;     // JWT devuelto por /v1/auth/login
 let _usuario = null;   // datos del usuario logueado (id, nombre, rol, ...)
 
-export function setToken(token) { _token = token; }
 export function getToken() { return _token; }
 export function getUsuario() { return _usuario; }
 export function cerrarSesion() { _token = null; _usuario = null; }
+
+// ── IDs de catálogo fijos (según el seed de la API) ───────────────
+// Se usan para no depender de textos y evitar errores al mandar datos.
+export const ESTATUS = {
+  ACTIVO: 1, INACTIVO: 2,
+  PENDIENTE: 3, EN_PREPARACION: 4, LISTO: 5, ENTREGADO: 6, CANCELADO: 7,
+  DISPONIBLE: 8, OCUPADA: 9, RESERVADA: 10,
+};
+export const CATEGORIA_GASTO_COMPRA = 1; // "Compra de ingredientes"
 
 // ── Wrapper de fetch ──────────────────────────────────────────────
 // Arma la URL con la base, agrega headers JSON + Authorization (si hay token),
@@ -34,7 +43,6 @@ export async function apiFetch(endpoint, { method = 'GET', body, auth = true } =
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch (error) {
-    // Falla de red: la API no responde (IP mal puesta, sin conexión, etc.)
     console.log('Error de red al llamar a la API:', error);
     throw new Error('No se pudo conectar con el servidor. Revisa la conexión.');
   }
@@ -54,25 +62,68 @@ export async function apiFetch(endpoint, { method = 'GET', body, auth = true } =
   return datos;
 }
 
-// ── Autenticación ─────────────────────────────────────────────────
-// Llama a POST /v1/auth/login, guarda el token y los datos del usuario,
-// y devuelve el usuario. Lanza Error si las credenciales son incorrectas.
+// ══════════════════════════════════════════════════════════════════
+// AUTENTICACIÓN
+// ══════════════════════════════════════════════════════════════════
 export async function login(correo, password) {
   const datos = await apiFetch('/v1/auth/login', {
     method: 'POST',
     auth: false,
     body: { correo, password },
   });
-
   _token = datos.access_token;
   _usuario = datos.data;
   return datos.data;
 }
 
-// ── Ejemplos de consumo de la API ─────────────────────────────────
-// Una vez logueado, el token viaja solo. Agrega aquí las funciones que
-// necesiten las pantallas, siguiendo el mismo patrón:
-//
-//   export const getMenu     = () => apiFetch('/v1/comidas/');
-//   export const getPedidos  = () => apiFetch('/v1/pedidos/');
-//   export const crearPedido = (pedido) => apiFetch('/v1/pedidos/', { method: 'POST', body: pedido });
+// ══════════════════════════════════════════════════════════════════
+// CATÁLOGOS
+// ══════════════════════════════════════════════════════════════════
+export const getCategoriasComida = () => apiFetch('/v1/catalogos/categorias-comida');
+export const getCategoriasGasto = () => apiFetch('/v1/catalogos/categorias-gasto');
+export const getMetodosPago = () => apiFetch('/v1/catalogos/metodos-pago');
+
+// ══════════════════════════════════════════════════════════════════
+// MESAS
+// ══════════════════════════════════════════════════════════════════
+export const getMesas = () => apiFetch('/v1/mesas/');
+
+// ══════════════════════════════════════════════════════════════════
+// COMIDAS (menú)
+// ══════════════════════════════════════════════════════════════════
+export const getComidas = () => apiFetch('/v1/comidas/');
+export const crearComida = (data) => apiFetch('/v1/comidas/', { method: 'POST', body: data });
+export const actualizarComida = (id, data) => apiFetch(`/v1/comidas/${id}`, { method: 'PATCH', body: data });
+export const eliminarComida = (id) => apiFetch(`/v1/comidas/${id}`, { method: 'DELETE' });
+
+// ══════════════════════════════════════════════════════════════════
+// INGREDIENTES (inventario)
+// ══════════════════════════════════════════════════════════════════
+export const getIngredientes = () => apiFetch('/v1/ingredientes/');
+export const actualizarIngrediente = (id, data) => apiFetch(`/v1/ingredientes/${id}`, { method: 'PATCH', body: data });
+
+// ══════════════════════════════════════════════════════════════════
+// PEDIDOS
+// ══════════════════════════════════════════════════════════════════
+export const getPedidos = (query = '') => apiFetch(`/v1/pedidos/${query}`);
+export const getPedido = (id) => apiFetch(`/v1/pedidos/${id}`);
+export const crearPedido = (data) => apiFetch('/v1/pedidos/', { method: 'POST', body: data });
+export const cambiarEstadoPedido = (id, idEstatus) =>
+  apiFetch(`/v1/pedidos/${id}/estado`, { method: 'PATCH', body: { id_estatus: idEstatus } });
+
+// ══════════════════════════════════════════════════════════════════
+// PAGOS (caja)
+// ══════════════════════════════════════════════════════════════════
+export const getPagos = () => apiFetch('/v1/pagos/');
+export const crearPago = (data) => apiFetch('/v1/pagos/', { method: 'POST', body: data });
+
+// ══════════════════════════════════════════════════════════════════
+// GASTOS / COMPRAS
+// ══════════════════════════════════════════════════════════════════
+export const getGastos = () => apiFetch('/v1/gastos/');
+export const crearGasto = (data) => apiFetch('/v1/gastos/', { method: 'POST', body: data });
+
+// ══════════════════════════════════════════════════════════════════
+// REPORTES (ganancias)
+// ══════════════════════════════════════════════════════════════════
+export const getGanancias = () => apiFetch('/v1/reportes/ganancias');

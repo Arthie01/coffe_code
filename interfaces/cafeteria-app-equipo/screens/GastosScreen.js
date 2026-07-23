@@ -1,33 +1,73 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-  SafeAreaView, ScrollView, View, Text, StyleSheet, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform,
+  SafeAreaView, ScrollView, View, Text, StyleSheet, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useOrders } from '../context/OrderContext';
+import { useFocusEffect } from '@react-navigation/native';
+import { getGastos, getCategoriasGasto, crearGasto } from '../services/api';
 import colors from '../theme/colors';
 import fonts from '../theme/fonts';
 
-const CATEGORIAS = ['Suministros', 'Mantenimiento', 'Servicios', 'Nómina', 'Otros'];
-
-// Módulo Caja: Gastos. Registra y consulta los gastos operativos de la
-// cafetería (gestión monetaria).
+// Módulo Caja: Gastos contra la API. Registra y consulta los gastos operativos
+// (POST/GET /v1/gastos/). La categoría se elige de un catálogo real para
+// mandar el id_categoria_gasto correcto.
 export default function GastosScreen() {
-  const { gastos, registrarGasto } = useOrders();
-  const [categoria, setCategoria] = useState(CATEGORIAS[0]);
+  const [gastos, setGastos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [idCategoria, setIdCategoria] = useState(null);
   const [descripcion, setDescripcion] = useState('');
   const [monto, setMonto] = useState('');
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+
+  const cargar = useCallback(async () => {
+    try {
+      setCargando(true);
+      const [rg, rcat] = await Promise.all([getGastos(), getCategoriasGasto()]);
+      setGastos(rg.data);
+      setCategorias(rcat.data);
+      setIdCategoria((prev) => prev || rcat.data[0]?.id || null);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setCargando(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { cargar(); }, [cargar]));
 
   const totalGastos = gastos.reduce((sum, g) => sum + g.monto, 0);
 
-  const registrar = () => {
+  const registrar = async () => {
     const montoNum = parseFloat(monto);
-    if (!descripcion.trim() || isNaN(montoNum) || montoNum <= 0) {
-      Alert.alert('Datos incompletos', 'Escribe una descripción y un monto válido.');
+    if (!idCategoria || isNaN(montoNum) || montoNum <= 0) {
+      Alert.alert('Datos incompletos', 'Elige una categoría y captura un monto válido.');
       return;
     }
-    registrarGasto({ categoria, descripcion: descripcion.trim(), monto: montoNum });
-    setDescripcion(''); setMonto('');
+    try {
+      setGuardando(true);
+      await crearGasto({
+        id_categoria_gasto: idCategoria,
+        descripcion: descripcion.trim() || null,
+        monto: montoNum,
+      });
+      setDescripcion(''); setMonto('');
+      cargar();
+    } catch (e) {
+      Alert.alert('No se pudo registrar', e.message);
+    } finally {
+      setGuardando(false);
+    }
   };
+
+  if (cargando) {
+    return (
+      <SafeAreaView style={[styles.safe, styles.center]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Cargando gastos...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -44,20 +84,24 @@ export default function GastosScreen() {
             <Text style={styles.formTitle}>REGISTRAR GASTO</Text>
             <Text style={styles.fieldLabel}>Categoría</Text>
             <View style={styles.chips}>
-              {CATEGORIAS.map((c) => (
-                <Pressable key={c} onPress={() => setCategoria(c)}
-                  style={[styles.chip, categoria === c && styles.chipOn]}>
-                  <Text style={[styles.chipText, categoria === c && styles.chipTextOn]}>{c}</Text>
+              {categorias.map((c) => (
+                <Pressable key={c.id} onPress={() => setIdCategoria(c.id)}
+                  style={[styles.chip, idCategoria === c.id && styles.chipOn]}>
+                  <Text style={[styles.chipText, idCategoria === c.id && styles.chipTextOn]}>{c.nombre}</Text>
                 </Pressable>
               ))}
             </View>
-            <TextInput style={styles.input} placeholder="Descripción" placeholderTextColor={colors.textSecondary}
+            <TextInput style={styles.input} placeholder="Descripción (opcional)" placeholderTextColor={colors.textSecondary}
               value={descripcion} onChangeText={setDescripcion} />
             <TextInput style={styles.input} placeholder="Monto (ej. 500)" placeholderTextColor={colors.textSecondary}
               value={monto} onChangeText={setMonto} keyboardType="decimal-pad" />
-            <Pressable style={styles.btn} onPress={registrar}>
-              <Ionicons name="add" size={18} color={colors.white} />
-              <Text style={styles.btnText}>REGISTRAR GASTO</Text>
+            <Pressable style={styles.btn} onPress={registrar} disabled={guardando}>
+              {guardando ? <ActivityIndicator color={colors.white} /> : (
+                <>
+                  <Ionicons name="add" size={18} color={colors.white} />
+                  <Text style={styles.btnText}>REGISTRAR GASTO</Text>
+                </>
+              )}
             </Pressable>
           </View>
 
@@ -66,8 +110,8 @@ export default function GastosScreen() {
           {gastos.map((g) => (
             <View key={g.id} style={styles.gastoRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.rowLabel}>{g.descripcion}</Text>
-                <Text style={styles.rowSub}>{g.categoria}</Text>
+                <Text style={styles.rowLabel}>{g.descripcion || g.categoria}</Text>
+                <Text style={styles.rowSub}>{g.categoria} · {g.usuario}</Text>
               </View>
               <Text style={styles.monto}>- ${g.monto.toFixed(2)}</Text>
             </View>
@@ -80,6 +124,8 @@ export default function GastosScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
+  center: { justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 12, color: colors.textSecondary },
   scroll: { padding: 20, paddingBottom: 40 },
   title: { fontSize: 22, fontFamily: fonts.bold, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16, color: colors.text },
   statCard: { backgroundColor: colors.white, borderRadius: 12, padding: 16, marginBottom: 18, borderLeftWidth: 3, borderLeftColor: colors.danger },
